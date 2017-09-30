@@ -110,6 +110,9 @@ DIGITS [0-9][0-9][0-9]
 <INITIAL>\"\" {adjust(); yylval.sval = String("(null)"); return STRING;}
 <INITIAL>"/*" {adjust(); comment_stack = 0; comment_stack++; BEGIN COMMENT;}
 
+<INITIAL>. {adjust(); EM_error(EM_tokPos, "Illegal token");}
+<INITIAL><<EOF>> {adjust(); yyterminate();}
+
 <STR>\\n {adjust_str(); strcat(str_buf, "\n");}
 <STR>\\t {adjust_str(); strcat(str_buf, "\t");}
 <STR>\\\^[@A-Z\[\\\]\^_] {adjust_str(); strcat(str_buf, yytext);}
@@ -123,7 +126,9 @@ DIGITS [0-9][0-9][0-9]
 <STR>\\\\ {adjust_str(); strcat(str_buf, "\\");}
 <STR>\\[ \t\n\f]+\\ {adjust_str();}
 <STR>\" {adjust_str(); BEGIN INITIAL; yylval.sval = String(str_buf); return STRING;}
+<STR>\\ {adjust_str(); EM_error(EM_tokPos, "Illegal escaped character");}
 <STR>. {adjust_str(); strcat(str_buf, yytext);}
+<STR><<EOF>> {adjust_str(); EM_error(EM_tokPos, "Expect \" at the end of a string");}
 
 <COMMENT>"/*" {adjust(); comment_stack++;}
 <COMMENT>. {adjust(); continue;}
@@ -133,4 +138,5 @@ DIGITS [0-9][0-9][0-9]
   comment_stack--;
   if(comment_stack == 0) BEGIN INITIAL;
 }
+<COMMENT><<EOF>> {adjust(); EM_error(EM_tokPos, "Expect */ at the end of a comment");}
 
