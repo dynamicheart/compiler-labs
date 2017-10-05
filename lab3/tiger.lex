@@ -109,7 +109,6 @@ DIGITS [0-9][0-9][0-9]
 <INITIAL>{INT} {adjust(); yylval.ival=atoi(yytext); return INT;}
 
 <INITIAL>\" {adjust(); strcpy(str_buf, "\0"); BEGIN STR;}
-<INITIAL>\"\" {adjust(); yylval.sval = String("(null)"); return STRING;}
 <INITIAL>"/*" {adjust(); comment_stack = 0; comment_stack++; BEGIN COMMENT;}
 
 <INITIAL>. {adjust(); EM_error(EM_tokPos, "Illegal token");}
