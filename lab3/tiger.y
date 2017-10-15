@@ -64,6 +64,11 @@ void yyerror(char *s)
 
 %start program
 
+%nonassoc EQ NEQ GT LT GE LE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left UMINUS
+
 %%
 
 program:  exp  {absyn_root = $1;};
@@ -72,6 +77,8 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    |  NIL  {$$ = A_NilExp(EM_tokPos);}
    |  INT  {$$ = A_IntExp(EM_tokPos, $1);}
    |  STRING  {$$ = A_StringExp(EM_tokPos, $1);}
+   |  MINUS exp %prec UMINUS {$$ = A_OpExp(EM_tokPos, A_minusOp, A_IntExp(EM_tokPos, 0), $2);}
+   |  LPAREN exp RPAREN  {$$ = $2;}
    |  ID LPAREN actuals RPAREN  {$$ = A_CallExp(EM_tokPos, S_Symbol($1), $3);}
    |  exp PLUS exp  {$$ = A_OpExp(EM_tokPos, A_plusOp, $1, $3);}
    |  exp MINUS exp  {$$ = A_OpExp(EM_tokPos, A_minusOp, $1, $3);}
@@ -93,6 +100,7 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    |  FOR ID ASSIGN exp TO exp DO exp  {$$ = A_ForExp(EM_tokPos, S_Symbol($2), $4, $6, $8);}
    |  LET decs IN expseq END  {$$ = A_LetExp(EM_tokPos, $2, $4);}
    |  ID LBRACK exp RBRACK OF exp  {$$ = A_ArrayExp(EM_tokPos, S_Symbol($1), $3, $6);}
+   ;
 
 /* A sequence of zero or more expressions */
 expseq:  {$$ = NULL;}
@@ -126,8 +134,8 @@ one:  ID DOT ID  {$$ = A_FieldVar(EM_tokPos, A_SimpleVar(EM_tokPos, S_Symbol($1)
    ;
 
 oneormore:  one  {$$ = $1;}
-         |  oneormore DOT ID  {$$ = A_SubscriptVar(EM_tokPos, $1, $3);}
-         |  oneormore LBRACK exp RBRACK  {$$ = A_SubscriptVar(EM_tokPos, $1, S_Symbol($3));}
+         |  oneormore DOT ID  {$$ = A_FieldVar(EM_tokPos, $1, S_Symbol($3));}
+         |  oneormore LBRACK exp RBRACK  {$$ = A_SubscriptVar(EM_tokPos, $1, $3);}
          ;
 
 decs:  {$$ = NULL;} 
@@ -170,7 +178,7 @@ tyfields:  {$$ = NULL;}
         |  tyfields_nonempty  {$$ = $1;}
         ;
 
-tyfields_nonempty:  ID COLON ID  {$$ = A_Field(EM_tokPos, S_Symbol($1), S_Symbol($3));}
+tyfields_nonempty:  ID COLON ID  {$$ = A_FieldList(A_Field(EM_tokPos, S_Symbol($1), S_Symbol($3)), NULL);}
                  |  ID COLON ID COMMA tyfields_nonempty  {$$ = A_FieldList(A_Field(EM_tokPos, S_Symbol($1), S_Symbol($3)), $5);}
                  ;
 
