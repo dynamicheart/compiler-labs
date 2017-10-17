@@ -69,7 +69,9 @@ void yyerror(char *s)
 %nonassoc FUNCTION
 %nonassoc TYPE
 %nonassoc ELSE /* Dangling else */ 
-%nonassoc ID
+%nonassoc OF
+%nonassoc DO
+%right ASSIGN
 /* Shift/reduce handling part Ends */
 
 %left OR
