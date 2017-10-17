@@ -64,6 +64,16 @@ void yyerror(char *s)
 
 %start program
 
+/* Shift/reduce handling part Begins */
+%nonassoc LTS  /* LTS means lower than shift */
+%nonassoc FUNCTION
+%nonassoc TYPE
+%nonassoc ELSE /* Dangling else */ 
+%nonassoc ID
+/* Shift/reduce handling part Ends */
+
+%left OR
+%left AND
 %nonassoc EQ NEQ GT LT GE LE
 %left PLUS MINUS
 %left TIMES DIVIDE
@@ -94,22 +104,23 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    |  LPAREN sequencing RPAREN  {$$ = A_SeqExp(EM_tokPos, $2);}
    |  lvalue ASSIGN exp  {$$ = A_AssignExp(EM_tokPos, $1, $3);}
    |  IF exp THEN exp ELSE exp  {$$ = A_IfExp(EM_tokPos, $2, $4, $6);}
-   |  IF exp THEN exp  {$$ = A_IfExp(EM_tokPos, $2, $4, NULL);}
+   |  IF exp THEN exp %prec LTS  {$$ = A_IfExp(EM_tokPos, $2, $4, NULL);}
    |  WHILE exp DO exp  {$$ = A_WhileExp(EM_tokPos, $2, $4);}
    |  BREAK  {$$ = A_BreakExp(EM_tokPos);}
    |  FOR ID ASSIGN exp TO exp DO exp  {$$ = A_ForExp(EM_tokPos, S_Symbol($2), $4, $6, $8);}
    |  LET decs IN expseq END  {$$ = A_LetExp(EM_tokPos, $2, $4);}
    |  ID LBRACK exp RBRACK OF exp  {$$ = A_ArrayExp(EM_tokPos, S_Symbol($1), $3, $6);}
+   |  exp AND exp  {$$ = A_IfExp(EM_tokPos, $1, $3, A_IntExp(EM_tokPos, 0));}
+   |  exp OR exp  {$$ = A_IfExp(EM_tokPos, $1, A_IntExp(EM_tokPos, 1), $3);}
    ;
 
 /* A sequence of zero or more expressions */
 expseq:  {$$ = NULL;}
-      |  exp  {$$ = A_SeqExp(EM_tokPos, A_ExpList($1, NULL));}
       |  sequencing_exps  {$$ = A_SeqExp(EM_tokPos, $1);}
       ;
 
-actuals:  nonemptyactuals  {$$ = $1;}
-       |  {$$ = NULL;}
+actuals:  {$$ = NULL;}
+       |  nonemptyactuals  {$$ = $1;}
        ;
 
 nonemptyactuals:  exp  {$$ = A_ExpList($1, NULL);}
@@ -160,15 +171,14 @@ rec:  {$$ = NULL;}
    ;
 
 rec_nonempty:  rec_one  {$$ = A_EfieldList($1, NULL);}
-            |  rec_one COMMA rec_nonempty  {$$ = A_EfieldList($1, NULL);}
+            |  rec_one COMMA rec_nonempty  {$$ = A_EfieldList($1, $3);}
             ;
 
 rec_one:  ID EQ exp  {$$ = A_Efield(S_Symbol($1), $3);}
        ;
 
-tydec:  {$$ = NULL;}
-     |  tydec_one  {$$ = A_NametyList($1, NULL);}
-     |  tydec_one tydec  {$$ = A_NametyList($1, $2);}
+tydec:  tydec_one %prec LTS  {$$ = A_NametyList($1, NULL);}
+     |  tydec_one tydec {$$ = A_NametyList($1, $2);}
      ;
 
 tydec_one:  TYPE ID EQ ty  {$$ = A_Namety(S_Symbol($2), $4);}
@@ -187,8 +197,7 @@ ty:  ID  {$$ = A_NameTy(EM_tokPos, S_Symbol($1));}
   |  ARRAY OF ID  {$$ = A_ArrayTy(EM_tokPos, S_Symbol($3));}
   ;
 
-fundec:  {$$ = NULL;}
-      |  fundec_one  {$$ = A_FundecList($1, NULL);}
+fundec:  fundec_one %prec LTS  {$$ = A_FundecList($1, NULL);}
       |  fundec_one fundec  {$$ = A_FundecList($1, $2);}
       ;
 
