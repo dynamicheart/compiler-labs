@@ -91,6 +91,7 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    |  STRING  {$$ = A_StringExp(EM_tokPos, $1);}
    |  MINUS exp %prec UMINUS {$$ = A_OpExp(EM_tokPos, A_minusOp, A_IntExp(EM_tokPos, 0), $2);}
    |  LPAREN exp RPAREN  {$$ = $2;}
+   |  LPAREN RPAREN  {$$ = NULL;}
    |  ID LPAREN actuals RPAREN  {$$ = A_CallExp(EM_tokPos, S_Symbol($1), $3);}
    |  exp PLUS exp  {$$ = A_OpExp(EM_tokPos, A_plusOp, $1, $3);}
    |  exp MINUS exp  {$$ = A_OpExp(EM_tokPos, A_minusOp, $1, $3);}
