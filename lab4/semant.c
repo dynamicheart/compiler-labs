@@ -140,18 +140,16 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
           if(right.ty->kind != Ty_int){
             EM_error(a->u.op.right->pos, "integer required");
           }
-          return expTy(NULL, Ty_Int());
         }else if(oper == A_eqOp || oper == A_neqOp){
           if(!assertSameType(left.ty, right.ty)){
             EM_error(a->pos, "same type required");
           }
-          return expTy(NULL, Ty_Int());
         }else{
           if(!((left.ty->kind == Ty_int && right.ty->kind == Ty_int) || (left.ty->kind == Ty_string && right.ty->kind == Ty_string))){
             EM_error(a->pos, "same type required");
           }
-          return expTy(NULL, Ty_Int());
         }
+        return expTy(NULL, Ty_Int());
       }
     case A_letExp:
       {
@@ -190,7 +188,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
         Ty_tyList formal;
         E_enventry x = S_look(venv, a->u.call.func);
        
-        if(!x){
+        if(!x || x->kind != E_funEntry){
           EM_error(a->pos, "undefined function %s", S_name(a->u.call.func));
           return expTy(NULL, Ty_Int());
         }
