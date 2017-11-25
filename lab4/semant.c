@@ -318,7 +318,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
         S_enter(venv, a->u.forr.var, E_ROVarEntry(Ty_Int()));
         struct expty body = transExp(venv, tenv, a->u.forr.body);
         if(body.ty->kind != Ty_void){
-          EM_error(a->u.iff.then->pos, "while body must produce no value");
+          EM_error(a->u.iff.then->pos, "for body must produce no value");
         }
         S_endScope(venv);
         return expTy(NULL, Ty_Void());
