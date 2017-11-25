@@ -464,7 +464,7 @@ void transDec(S_table venv, S_table tenv, A_dec d)
             if(resultTy->kind == Ty_void){
               EM_error(f->head->body->pos, "procedure returns value");
             }else{
-              EM_error(f->head->body->pos, "type mismatch 2");
+              EM_error(f->head->body->pos, "type mismatch");
             }
           }
           S_endScope(venv);
