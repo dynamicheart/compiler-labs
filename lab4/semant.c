@@ -348,7 +348,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
           return expTy(NULL, Ty_Int());
         }
 
-        if(init.ty->kind != ty->u.array->kind){
+        if(!assertSameType(init.ty, ty->u.array)){
           EM_error(a->pos, "type mismatch");
           return expTy(NULL, Ty_Int());
         }
@@ -420,6 +420,13 @@ void transDec(S_table venv, S_table tenv, A_dec d)
               EM_error(d->pos, "illegal type cycle");
               return;
             }
+          }
+        }
+        
+        for(namety = d->u.type; namety; namety = namety->tail){
+          if(namety->head->ty->kind == A_nameTy){
+            Ty_ty ty = S_look(tenv, namety->head->name);
+            *ty = *actual_ty(ty);
           }
         }
 
