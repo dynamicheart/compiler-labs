@@ -20,13 +20,13 @@ struct F_access_ {
 	} u;
 };
 
-const int F_WORD_SIZE = 4;
+const int F_wordSize = 4;
 
 struct F_frame_ {
   Temp_label name;
   F_accessList formals;
   int local_count;
-}
+};
 
 F_frag F_StringFrag(Temp_label label, string str)
 {
@@ -72,11 +72,17 @@ static F_access InReg(Temp_temp reg)
 
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals)
 {
-  F_accessList a = NULL;
-  for(; formals; formals = formals->tail){
-    a = F_AccessList(, a);
+  F_accessList alist = NULL, rlist = NULL;
+  int i = 0;
+  for(; formals; formals = formals->tail, i++){
+    alist = F_AccessList(InFrame((1 + i) * F_wordSize), alist);
   }
-  return a;
+
+  for(; alist; alist = alist->tail){
+    rlist = F_AccessList(alist->head, rlist);
+  }
+
+  return rlist;
 }
 
 F_accessList F_AccessList(F_access head, F_accessList tail){
@@ -100,7 +106,7 @@ F_access F_allocLocal(F_frame f, bool escape)
 {
   f->local_count++;
   if(escape){
-    return InFrame(F_WORD_SIZE * (- f->local_count));
+    return InFrame(F_wordSize * (- f->local_count));
   }else{
     return InReg(Temp_newtemp());
   }
@@ -138,7 +144,7 @@ F_frame F_newFrame(Temp_label name, U_boolList formals)
 
 T_exp F_externalCall(string s, T_expList args)
 {
-  return T_Call(T_Name(Temp_nameLabel(s), args));
+  return T_Call(T_Name(Temp_namedlabel(s)), args);
 }
 
 T_stm F_procEntryExit1(F_frame frame, T_stm stm)
