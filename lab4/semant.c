@@ -81,7 +81,7 @@ struct expty transVar(S_table venv, S_table tenv, A_var v)
       {
         E_enventry x = S_look(venv, v->u.simple);
         if(x && x->kind == E_varEntry){
-          return expTy(NULL, x->u.var.ty);
+          return expTy(NULL, actual_ty(x->u.var.ty));
         }else{
           EM_error(v->pos, "undefined variable %s", S_name(v->u.simple));
           return expTy(NULL, Ty_Void());
@@ -98,7 +98,7 @@ struct expty transVar(S_table venv, S_table tenv, A_var v)
 
         for(Ty_fieldList fields = var.ty->u.record; fields; fields = fields->tail){
           if(fields->head->name == v->u.field.sym){
-            return expTy(NULL, fields->head->ty);
+            return expTy(NULL, actual_ty(fields->head->ty));
           }
         }
         EM_error(v->pos, "field %s doesn't exist", S_name(v->u.field.sym));
@@ -213,12 +213,12 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
 
         if(!ty){
           EM_error(a->pos, "undefined type %s", S_name(a->u.record.typ));
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         if(ty->kind != Ty_record){
           EM_error(a->pos, "not a record type");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         A_efieldList efields;
@@ -266,7 +266,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
         struct expty test = transExp(venv, tenv, a->u.iff.test);
         if(test.ty->kind != Ty_int){
           EM_error(a->u.iff.test->pos, "integer required");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         struct expty then = transExp(venv, tenv, a->u.iff.then);
@@ -275,13 +275,13 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
           struct expty elsee = transExp(venv, tenv, a->u.iff.elsee);
           if(then.ty->kind != elsee.ty->kind){
             EM_error(a->u.iff.elsee->pos, "then exp and else exp type mismatch");
-            return expTy(NULL, Ty_Int());
+            return expTy(NULL, Ty_Void());
           }
           return then;
         }else{
           if(then.ty->kind != Ty_void){
             EM_error(a->u.iff.then->pos, "if-then exp's body must produce no value");
-            return expTy(NULL, Ty_Int());
+            return expTy(NULL, Ty_Void());
           }
           return expTy(NULL, Ty_Void());
         }
@@ -291,13 +291,13 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
         struct expty test = transExp(venv, tenv, a->u.whilee.test);
         if(test.ty->kind != Ty_int){
           EM_error(a->u.whilee.test->pos, "integer required");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         struct expty body = transExp(venv, tenv, a->u.whilee.body);
         if(body.ty->kind != Ty_void){
           EM_error(a->u.iff.then->pos, "while body must produce no value");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
         return expTy(NULL, Ty_Void());
       }
@@ -333,22 +333,22 @@ struct expty transExp(S_table venv, S_table tenv, A_exp a)
 
         if(!ty){
           EM_error(a->pos, "undefined type %s", S_name(a->u.array.typ));
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         if(ty->kind != Ty_array){
           EM_error(a->pos, "same type required");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         if(size.ty->kind != Ty_int){
           EM_error(a->pos, "integer required");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         if(!assertSameType(init.ty, ty->u.array)){
           EM_error(a->pos, "type mismatch");
-          return expTy(NULL, Ty_Int());
+          return expTy(NULL, Ty_Void());
         }
 
         return expTy(NULL, ty);
@@ -440,9 +440,9 @@ void transDec(S_table venv, S_table tenv, A_dec d)
 
         for(A_fundecList fundecs = d->u.function; fundecs; fundecs = fundecs->tail){
           S_beginScope(venv);
-          E_enventry f_entry = S_look(venv, fundecs->head->name);
-          Ty_tyList formalTys = f_entry->u.fun.formals;
-          Ty_ty resultTy = f_entry->u.fun.result;
+          E_enventry funentry = S_look(venv, fundecs->head->name);
+          Ty_tyList formalTys = funentry->u.fun.formals;
+          Ty_ty resultTy = funentry->u.fun.result;
           for(A_fieldList fields = fundecs->head->params; fields; fields = fields -> tail, formalTys = formalTys->tail){
             S_enter(venv, fields->head->name, E_VarEntry(formalTys->head));
           }
