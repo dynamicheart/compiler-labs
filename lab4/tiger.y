@@ -39,14 +39,14 @@ void yyerror(char *s)
 %token <sval> ID STRING
 %token <ival> INT
 
-%token 
-  COMMA COLON SEMICOLON LPAREN RPAREN LBRACK RBRACK 
-  LBRACE RBRACE DOT 
+%token
+  COMMA COLON SEMICOLON LPAREN RPAREN LBRACK RBRACK
+  LBRACE RBRACE DOT
   PLUS MINUS TIMES DIVIDE EQ NEQ LT LE GT GE
   AND OR ASSIGN
-  ARRAY IF THEN ELSE WHILE FOR TO DO LET IN END OF 
+  ARRAY IF THEN ELSE WHILE FOR TO DO LET IN END OF
   BREAK NIL
-  FUNCTION VAR TYPE 
+  FUNCTION VAR TYPE
 
 %type <exp> exp expseq
 %type <explist> actuals  nonemptyactuals sequencing  sequencing_exps
@@ -68,7 +68,7 @@ void yyerror(char *s)
 %nonassoc LTS  /* LTS means lower than shift */
 %nonassoc FUNCTION
 %nonassoc TYPE
-%nonassoc ELSE /* Dangling else */ 
+%nonassoc ELSE /* Dangling else */
 %nonassoc OF
 %nonassoc DO
 %right ASSIGN
@@ -91,7 +91,7 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    |  STRING  {$$ = A_StringExp(EM_tokPos, $1);}
    |  MINUS exp %prec UMINUS {$$ = A_OpExp(EM_tokPos, A_minusOp, A_IntExp(EM_tokPos, 0), $2);}
    |  LPAREN exp RPAREN  {$$ = $2;}
-   |  LPAREN RPAREN  {$$ = NULL;}
+   |  LPAREN RPAREN  {$$ = A_VoidExp(EM_tokPos);}
    |  ID LPAREN actuals RPAREN  {$$ = A_CallExp(EM_tokPos, S_Symbol($1), $3);}
    |  exp PLUS exp  {$$ = A_OpExp(EM_tokPos, A_plusOp, $1, $3);}
    |  exp MINUS exp  {$$ = A_OpExp(EM_tokPos, A_minusOp, $1, $3);}
@@ -118,7 +118,7 @@ exp:  lvalue  {$$ = A_VarExp(EM_tokPos, $1);}
    ;
 
 /* A sequence of zero or more expressions */
-expseq:  {$$ = NULL;}
+expseq:  {$$ = A_VoidExp(EM_tokPos);}
       |  sequencing_exps  {$$ = A_SeqExp(EM_tokPos, $1);}
       ;
 
@@ -152,7 +152,7 @@ oneormore:  one  {$$ = $1;}
          |  oneormore LBRACK exp RBRACK  {$$ = A_SubscriptVar(EM_tokPos, $1, $3);}
          ;
 
-decs:  {$$ = NULL;} 
+decs:  {$$ = NULL;}
     |  decs_nonempty  {$$ = $1;}
     ;
 
@@ -167,7 +167,7 @@ decs_nonempty_s:  tydec  {$$ = A_TypeDec(EM_tokPos, $1);}
 
 vardec:  VAR ID ASSIGN exp  {$$ = A_VarDec(EM_tokPos,S_Symbol($2), S_Symbol(""), $4);}
       |  VAR ID COLON ID ASSIGN exp  {$$ = A_VarDec(EM_tokPos, S_Symbol($2), S_Symbol($4), $6);}
-      ; 
+      ;
 
 rec:  {$$ = NULL;}
    |  rec_nonempty  {$$ = $1;}
@@ -207,4 +207,3 @@ fundec:  fundec_one %prec LTS  {$$ = A_FundecList($1, NULL);}
 fundec_one:  FUNCTION ID LPAREN tyfields RPAREN EQ exp  {$$ = A_Fundec(EM_tokPos, S_Symbol($2), $4, S_Symbol(""), $7);}
           |  FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  {$$ = A_Fundec(EM_tokPos, S_Symbol($2), $4, S_Symbol($7), $9);}
           ;
-
