@@ -73,9 +73,10 @@ static F_access InReg(Temp_temp reg)
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals)
 {
   F_accessList alist = NULL, rlist = NULL;
-  int i = 0;
-  for(; formals; formals = formals->tail, i++){
-    alist = F_AccessList(InFrame((1 + i) * F_wordSize), alist);
+	//reserve space for return addreess
+  int offset =  F_wordSize;
+  for(; formals; formals = formals->tail, offset += F_wordSize){
+    alist = F_AccessList(InFrame(offset), alist);
   }
 
   for(; alist; alist = alist->tail){
@@ -104,8 +105,8 @@ F_accessList F_formals(F_frame f)
 
 F_access F_allocLocal(F_frame f, bool escape)
 {
-  f->local_count++;
   if(escape){
+		f->local_count++; //TODO
     return InFrame(F_wordSize * (- f->local_count));
   }else{
     return InReg(Temp_newtemp());
@@ -125,11 +126,13 @@ T_exp F_Exp(F_access acc, T_exp framePtr)
 
 Temp_temp F_FP(void)
 {
+	//TODO should always return the same one.
   return Temp_newtemp();
 }
 
 Temp_temp F_RV(void)
 {
+	//TODO should always return the same one.
   return Temp_newtemp();
 }
 
@@ -151,4 +154,3 @@ T_stm F_procEntryExit1(F_frame frame, T_stm stm)
 {
   return stm;
 }
-
