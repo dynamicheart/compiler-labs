@@ -53,35 +53,33 @@ bool FG_isMove(G_node n) {
 G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {
 	//your code here.
 	G_graph g = G_Graph();
-	G_table t = G_empty();
-	G_node n1 = NULL, n2;
-	G_nodelist nodes;
-	AS_instrList ilist;
-	AS_instr inst;
+	G_node a = NULL, b = NULL;
+	AS_instr last_inst = NULL;
 	TAB_table label_node_maps = TAB_empty();
 
-	for(ilist = il; iList; ilist = ilist->tail) {
-		n2 = G_Node(g, ilist->head);
+	for(AS_instrList ilist = il; ilist; ilist = ilist->tail) {
+		b = G_Node(g, ilist->head);
 
-		//not knowing whether there is a edge between neibourgh traces
-		if(n1 && ilist->head->kind != I_LABEL) {
-			G_addEdge(n1, n2);
+		if(a) {
+			G_addEdge(a, b);
 		}
 
 		if(ilist->head->kind == I_LABEL) {
-			TAB_enter(label_node_maps, ilist->head->u.LABEL.label, n2);
+			TAB_enter(label_node_maps, ilist->head->u.LABEL.label, b);
 		}
 
-		n1 = n2;
+		a = b;
+		last_inst = ilist->head;
 	}
 
 	//add edges between traces
-	for(nodes = G_nodes(g); nodes; nodes = nodes->tail) {
-		inst = G_nodeInfo(nodes->head);
-		if(inst->kind == I_OPER) {
+	for(G_nodeList nodes = G_nodes(g); nodes; nodes = nodes->tail) {
+		AS_instr inst = G_nodeInfo(nodes->head);
+		if(inst->kind == I_OPER && inst->u.OPER.jumps) {
 			Temp_labelList ll = inst->u.OPER.jumps->labels;
 			for(; ll; ll = ll->tail) {
-				G_addEdge(nodes->head, TAB_look(label_node_maps, ll->head));
+				G_node successor = TAB_look(label_node_maps, ll->head);
+				G_addEdge(nodes->head, successor);
 			}
 		}
 	}
