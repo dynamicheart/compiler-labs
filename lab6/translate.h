@@ -41,7 +41,7 @@ Tr_accessList Tr_formals(Tr_level level);
 Tr_access Tr_allocLocal(Tr_level level, bool escape);
 
 Tr_exp Tr_simpleVar(Tr_access, Tr_level);
-Tr_exp Tr_fieldVar(Tr_exp base_addr, int offset);
+Tr_exp Tr_fieldVar(Tr_exp base_addr, int index);
 Tr_exp Tr_subscriptVar(Tr_exp base_addr, Tr_exp index);
 
 Tr_exp Tr_nilExp();
@@ -51,9 +51,8 @@ Tr_exp Tr_callExp(Tr_level level, Tr_level funLevel, Temp_label label, Tr_expLis
 Tr_exp Tr_arithExp(A_oper oper, Tr_exp left, Tr_exp right);
 Tr_exp Tr_relExp(A_oper, Tr_exp left, Tr_exp right);
 Tr_exp Tr_relStrExp(A_oper oper, Tr_exp left, Tr_exp right);
-Tr_exp Tr_relRefExp(A_oper oper, Tr_exp left, Tr_exp right);
-Tr_exp Tr_recordExp(int n, Tr_expList fields);
-Tr_exp Tr_seqExp(Tr_expList seq); //seq in reverse direction
+Tr_exp Tr_recordExp(int size, Tr_expList fields); //ATTENTION: fields is in reverse direction, the head will be executed last.
+Tr_exp Tr_seqExp(Tr_expList seqs); //ATTENTION: seqs is in reverse direction, the head will be executed last.
 Tr_exp Tr_assignExp(Tr_exp var, Tr_exp exp);
 Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp elsee);
 Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Temp_label done);
@@ -66,4 +65,3 @@ void Tr_procEntryExit(Tr_level level, Tr_exp body, Tr_accessList formals);
 F_fragList Tr_getResult(void);
 
 #endif
-

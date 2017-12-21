@@ -3,3 +3,5 @@
 a.out
 *.a
 *tar.gz
+.tags*
+

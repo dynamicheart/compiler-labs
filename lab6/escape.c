@@ -11,10 +11,12 @@ typedef struct escapeEntry_ *escapeEntry;
 struct escapeEntry_{
   int depth;
   bool* escape;
-}
+};
 
-escapeEntry EscapeEntry(int depth, bool* escape) {
-  escapeEntry entry = checked_malloc(sizeof(entry));
+static escapeEntry EscapeEntry(int depth, bool* escape);
+
+static escapeEntry EscapeEntry(int depth, bool* escape) {
+  escapeEntry entry = checked_malloc(sizeof(*entry));
   entry->depth = depth;
   entry->escape = escape;
   return entry;
@@ -108,14 +110,14 @@ static void traverseDec(S_table env, int depth, A_dec d) {
   switch(d->kind) {
     case A_functionDec: {
       A_fundecList fundecs;
-      for(fundecs = d->u.funtion; fundecs; fundecs = fundecs->tail) {
+      for(fundecs = d->u.function; fundecs; fundecs = fundecs->tail) {
         S_beginScope(env);
         A_fieldList params;
         for(params = fundecs->head->params; params; params = params->tail) {
           params->head->escape = FALSE;
           S_enter(env, params->head->name, EscapeEntry(depth + 1, &params->head->escape));
         }
-        traverseExp(env, depth + 1; fundecs->head->body);
+        traverseExp(env, depth + 1, fundecs->head->body);
         S_endScope(env);
       }
       break;

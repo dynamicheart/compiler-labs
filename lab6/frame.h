@@ -5,6 +5,7 @@
 #define FRAME_H
 
 #include "tree.h"
+#include "assem.h"
 
 typedef struct F_frame_ *F_frame;
 typedef struct F_access_ *F_access;
@@ -49,12 +50,12 @@ Temp_temp F_ESI(void);
 Temp_temp F_EDI(void);
 Temp_temp F_ESP(void);
 Temp_temp F_EBP(void);
+
+Temp_tempList F_callersaves(void);
 F_frame F_newFrame(Temp_label name, U_boolList formals);
 T_exp F_externalCall(string s, T_expList args);
 F_frag F_string(Temp_label lab, string str);
 F_frag F_newProcFrag(T_stm body, F_frame frame);
 T_stm F_procEntryExit1(F_frame frame, T_stm stm);
-AS_instrList F_procEntryExit2(AS_instrList body);
-AS_proc F_procEntryExit3(F_frame, AS_instrList body);
 
 #endif

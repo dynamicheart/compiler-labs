@@ -73,10 +73,10 @@ static F_access InReg(Temp_temp reg)
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals)
 {
   F_accessList alist = NULL, rlist = NULL;
-  int i = 0;
-  for(; formals; formals = formals->tail, i++){
-    alist = F_AccessList(InFrame((1 + i) * F_wordSize), alist);
-  }
+	int offset =  F_wordSize;
+  for(; formals; formals = formals->tail, offset += F_wordSize){
+		alist = F_AccessList(InFrame(offset), alist);
+	}
 
   for(; alist; alist = alist->tail){
     rlist = F_AccessList(alist->head, rlist);
@@ -92,6 +92,22 @@ F_accessList F_AccessList(F_access head, F_accessList tail){
   return a;
 }
 
+static Temp_tempList registers = NULL;
+Temp_tempList F_registers(void)
+{
+	if(registers = NULL) {
+		registers = Temp_TempList(F_EAX(),
+									Temp_TempList(F_ECX(),
+										Temp_TempList(F_EDX(),
+											Temp_TempList(F_EBX(),
+												Temp_TempList(F_ESI(),
+													Temp_TempList(F_EDI(),
+														Temp_TempList(F_ESP(),
+															Temp_TempList(F_EBP(), NULL))))))));
+	}
+	return registers;
+}
+
 Temp_label F_name(F_frame f)
 {
   return f->name;
@@ -104,8 +120,8 @@ F_accessList F_formals(F_frame f)
 
 F_access F_allocLocal(F_frame f, bool escape)
 {
-  f->local_count++;
   if(escape){
+		f->local_count++;
     return InFrame(F_wordSize * (- f->local_count));
   }else{
     return InReg(Temp_newtemp());
@@ -123,14 +139,97 @@ T_exp F_Exp(F_access acc, T_exp framePtr)
   assert(0);
 }
 
+static Temp_temp eax = NULL;
+Temp_temp F_EAX(void)
+{
+	if(eax == NULL) {
+		eax = Temp_newtemp();
+	}
+	return eax;
+}
+
+static Temp_temp ecx = NULL;
+Temp_temp F_ECX(void)
+{
+	if(ecx == NULL) {
+		ecx = Temp_newtemp();
+	}
+	return ecx;
+}
+
+static Temp_temp edx = NULL;
+Temp_temp F_EDX(void)
+{
+	if(edx == NULL) {
+		edx = Temp_newtemp();
+	}
+	return edx;
+}
+
+static Temp_temp ebx = NULL;
+Temp_temp F_EBX(void)
+{
+	if(ebx == NULL) {
+		ebx = Temp_newtemp();
+	}
+	return ebx;
+}
+
+static Temp_temp esi = NULL;
+Temp_temp F_ESI(void)
+{
+	if(esi == NULL) {
+		esi = Temp_newtemp();
+	}
+	return esi;
+}
+
+static Temp_temp edi = NULL;
+Temp_temp F_EDI(void)
+{
+	if(edi == NULL) {
+		edi = Temp_newtemp();
+	}
+	return edi;
+}
+
+static Temp_temp esp = NULL;
+Temp_temp F_ESP(void)
+{
+	if(esp == NULL) {
+		esp = Temp_newtemp();
+	}
+	return esp;
+}
+
+static Temp_temp ebp = NULL;
+Temp_temp F_EBP(void)
+{
+	if(ebp == NULL) {
+		ebp = Temp_newtemp();
+	}
+	return ebp;
+}
+
 Temp_temp F_FP(void)
 {
-  return Temp_newtemp();
+  return F_EBP();
 }
 
 Temp_temp F_RV(void)
 {
-  return Temp_newtemp();
+  return F_EAX();
+}
+
+static Temp_tempList callersaves = NULL;
+Temp_tempList F_callersaves(void)
+{
+	if(callersaves == NULL) {
+		callersaves = Temp_TempList(F_RV(),
+										Temp_TempList(F_ECX(),
+											Temp_TempList(F_EDX(), NULL)));
+	}
+	return callersaves;
 }
 
 F_frame F_newFrame(Temp_label name, U_boolList formals)
@@ -150,17 +249,4 @@ T_exp F_externalCall(string s, T_expList args)
 T_stm F_procEntryExit1(F_frame frame, T_stm stm)
 {
   return stm;
-}
-
-static Temp_tempList returnSink = NULL;
-AS_instrList F_procEntryExit2(AS_instrList body) {
-	if(!returnSink) returnSink =
-		Temp_TempList(ZERO, Temp_TempList(RA, Temp_TempList(SP, calleeSaves)));
-
-}
-
-AS_proc F_procEntryExit3(F_frame frame, AS_instrList body) {
-	char buf[100];
-	sprintf(buf, "PROCEDURE %s\n", S_name(frame->name));
-	return AS_Proc(String(buf), body, "END\n");
 }
