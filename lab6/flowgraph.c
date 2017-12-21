@@ -54,7 +54,6 @@ G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {
 	//your code here.
 	G_graph g = G_Graph();
 	G_node a = NULL, b = NULL;
-	AS_instr last_inst = NULL;
 	TAB_table label_node_maps = TAB_empty();
 
 	for(AS_instrList ilist = il; ilist; ilist = ilist->tail) {
@@ -69,7 +68,6 @@ G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {
 		}
 
 		a = b;
-		last_inst = ilist->head;
 	}
 
 	//add edges between traces
