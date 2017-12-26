@@ -24,9 +24,9 @@ AS_targets AS_Targets(Temp_labelList labels) {
 AS_instr AS_Oper(string a, Temp_tempList d, Temp_tempList s, AS_targets j) {
   AS_instr p = (AS_instr) checked_malloc (sizeof *p);
   p->kind = I_OPER;
-  p->u.OPER.assem=a; 
-  p->u.OPER.dst=d; 
-  p->u.OPER.src=s; 
+  p->u.OPER.assem=a;
+  p->u.OPER.dst=d;
+  p->u.OPER.src=s;
   p->u.OPER.jumps=j;
   return p;
 }
@@ -34,17 +34,17 @@ AS_instr AS_Oper(string a, Temp_tempList d, Temp_tempList s, AS_targets j) {
 AS_instr AS_Label(string a, Temp_label label) {
   AS_instr p = (AS_instr) checked_malloc (sizeof *p);
   p->kind = I_LABEL;
-  p->u.LABEL.assem=a; 
-  p->u.LABEL.label=label; 
+  p->u.LABEL.assem=a;
+  p->u.LABEL.label=label;
   return p;
 }
 
 AS_instr AS_Move(string a, Temp_tempList d, Temp_tempList s) {
   AS_instr p = (AS_instr) checked_malloc (sizeof *p);
   p->kind = I_MOVE;
-  p->u.MOVE.assem=a; 
-  p->u.MOVE.dst=d; 
-  p->u.MOVE.src=s; 
+  p->u.MOVE.assem=a;
+  p->u.MOVE.dst=d;
+  p->u.MOVE.src=s;
   return p;
 }
 
@@ -62,7 +62,7 @@ AS_instrList AS_splice(AS_instrList a, AS_instrList b) {
   p->tail=b;
   return a;
 }
-	
+
 static Temp_temp nthTemp(Temp_tempList list, int i) {
   assert(list);
   if (i==0) return list->head;
@@ -80,7 +80,7 @@ static Temp_label nthLabel(Temp_labelList list, int i) {
  * and replacing `d `s and `j stuff.
  * Last param is function to use to determine what to do with each temp.
  */
-static void format(char *result, string assem, 
+static void format(char *result, string assem,
 		   Temp_tempList dst, Temp_tempList src,
 		   AS_targets jumps, Temp_map m)
 {
@@ -103,14 +103,14 @@ static void format(char *result, string assem,
 		 i += strlen(s);
 	       }
 	break;
-      case 'j': assert(jumps); 
+      case 'j': assert(jumps);
 	       {int n = atoi(++p);
 		 string s = Temp_labelstring(nthLabel(jumps->labels,n));
 		 strcpy(result+i, s);
 		 i += strlen(s);
 	       }
 	break;
-      case '`': result[i] = '`'; i++; 
+      case '`': result[i] = '`'; i++;
 	break;
       default: assert(0);
       }}
@@ -127,8 +127,8 @@ void AS_print(FILE *out, AS_instr i, Temp_map m)
     fprintf(out, "%s\n", r);
     break;
   case I_LABEL:
-    format(r, i->u.LABEL.assem, NULL, NULL, NULL, m); 
-    fprintf(out, "%s:\n", r); 
+    format(r, i->u.LABEL.assem, NULL, NULL, NULL, m);
+    fprintf(out, "%s\n", r); 
     /* i->u.LABEL->label); */
     break;
   case I_MOVE: {

@@ -73,7 +73,7 @@ static F_access InReg(Temp_temp reg)
 static F_accessList makeFormalAccessList(F_frame f, U_boolList formals)
 {
   F_accessList alist = NULL, rlist = NULL;
-	int offset =  F_wordSize;
+	int offset =  F_wordSize * 2; // saved ebp, return address
   for(; formals; formals = formals->tail, offset += F_wordSize){
 		alist = F_AccessList(InFrame(offset), alist);
 	}
