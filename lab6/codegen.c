@@ -132,7 +132,7 @@ static void munchStm(T_stm s) {
     case T_LABEL: {
       char *a = checked_malloc(BUFSIZE * sizeof(char));
       sprintf(a, "%s:\n", Temp_labelstring(s->u.LABEL));
-      emit(AS_Oper(a, NULL, NULL, NULL));
+      emit(AS_Label(a, s->u.LABEL));
       break;
     }
     case T_SEQ:

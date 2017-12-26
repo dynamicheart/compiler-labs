@@ -11,6 +11,13 @@
 #include "liveness.h"
 #include "table.h"
 
+static void enterLiveMap(G_table t, G_node flowNode, Temp_tempList temps);
+static Temp_tempList lookupLiveMap(G_table t, G_node flownode);
+static Temp_tempList unionSet(Temp_tempList set1, Temp_tempList set2);
+static Temp_tempList differenceSet(Temp_tempList set1, Temp_tempList set2);
+static bool equalSet(Temp_tempList set1, Temp_tempList set2);
+static G_node getOrCreateNode(G_graph g, Temp_temp temp, TAB_table temp_node_table);
+
 static void enterLiveMap(G_table t, G_node flowNode, Temp_tempList temps) {
 	G_enter(t, flowNode, temps);
 }
@@ -26,10 +33,10 @@ static Temp_tempList unionSet(Temp_tempList set1, Temp_tempList set2) {
 	}
 
 	for(Temp_tempList temps2 = set2; temps2; temps2 = temps2->tail) {
-		bool found = false;
+		bool found = FALSE;
 		for(Temp_tempList temps1 = set1; temps1; temps1 = temps1->tail) {
 			if(temps1->head == temps2->head) {
-				found = true;
+				found = TRUE;
 				break;
 			}
 		}
@@ -43,10 +50,10 @@ static Temp_tempList unionSet(Temp_tempList set1, Temp_tempList set2) {
 static Temp_tempList differenceSet(Temp_tempList set1, Temp_tempList set2) {
 	Temp_tempList res = NULL;
 	for(Temp_tempList temps1 = set1; temps1; temps1 = temps1->tail) {
-		bool found = false;
+		bool found = FALSE;
 		for(Temp_tempList temps2 = set2; temps2; temps2 = temps2->tail) {
 			if(temps1->head == temps2->head) {
-				found = true;
+				found = TRUE;
 				break;
 			}
 		}
@@ -59,18 +66,53 @@ static Temp_tempList differenceSet(Temp_tempList set1, Temp_tempList set2) {
 
 static bool equalSet(Temp_tempList set1, Temp_tempList set2) {
 	for(Temp_tempList temps1 = set1; temps1; temps1 = temps1->tail) {
-		bool found = false;
+		bool found = FALSE;
 		for(Temp_tempList temps2 = set2; temps2; temps2 = temps2->tail) {
 			if(temps1->head == temps2->head) {
-				found = true;
+				found = TRUE;
 				break;
 			}
 		}
 		if(!found) {
-			return false;
+			return FALSE;
 		}
 	}
-	return true;
+	for(Temp_tempList temps2 = set2; temps2; temps2 = temps2->tail) {
+		bool found = FALSE;
+		for(Temp_tempList temps1 = set1; temps1; temps1 = temps1->tail) {
+			if(temps2->head == temps1->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+static G_node getOrCreateNode(G_graph g, Temp_temp temp, TAB_table temp_node_table) {
+	G_node node = TAB_look(temp_node_table, temp);
+	if(!node) {
+		node = G_Node(g, temp);
+		TAB_enter(temp_node_table, temp, node);
+	}
+	return node;
+}
+
+static void connect(struct Live_graph *lg, Temp_temp temp1, Temp_temp temp2, TAB_table temp_node_table) {
+	if(temp1 == temp2 || temp1 == F_FP() || temp2 == F_FP()) return;
+
+	G_node a = getOrCreateNode(lg->graph, temp1, temp_node_table);
+	G_node b = getOrCreateNode(lg->graph, temp2, temp_node_table);
+
+	bool *is_adj = G_isAdj(lg->adjSet, G_nodeCount(lg->graph), G_nodeKey(b), G_nodeKey(a));
+	*is_adj = TRUE;
+	is_adj = G_isAdj(lg->adjSet, G_nodeCount(lg->graph), G_nodeKey(a), G_nodeKey(b));
+	*is_adj = TRUE;
+	G_addEdge(a, b);
+	G_addEdge(b, a);
 }
 
 Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail) {
@@ -86,21 +128,28 @@ Temp_temp Live_gtemp(G_node n) {
 	return G_nodeInfo(n);
 }
 
+// void* show(G_node node, Temp_tempList sets){
+// 	printf("(%d): ", G_nodeKey(node));
+// 	for(;sets; sets = sets->tail) {
+// 		printf("t%d ", Temp_int(sets->head));
+// 	}
+// 	printf("\n");
+// }
+
 struct Live_graph Live_liveness(G_graph flow) {
 	//your code here.
 	struct Live_graph lg;
 	lg.graph = G_Graph();
 	lg.moves = NULL;
-	G_nodeList flownodes;
 
 	// calculate the in/out set and begin liveness analysis
 	G_table in_set_table = G_empty();
 	G_table out_set_table = G_empty();
-	bool has_change = true;
+	bool has_change = TRUE;
 
 	while(has_change) {
-		has_change = false;
-		for(flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+		has_change = FALSE;
+		for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
 			Temp_tempList old_in_set = lookupLiveMap(in_set_table, flownodes->head);
 			Temp_tempList old_out_set = lookupLiveMap(out_set_table, flownodes->head);
 			Temp_tempList use_set = FG_use(flownodes->head);
@@ -113,16 +162,64 @@ struct Live_graph Live_liveness(G_graph flow) {
 				new_out_set = unionSet(new_out_set, lookupLiveMap(in_set_table, nodes->head));
 			}
 
-			if(!equalSet(old_in_set, new_in_set) || !equal(old_out_set, new_out_set)) {
-				has_change = true;
+			if(!equalSet(old_in_set, new_in_set)) {
+				has_change = TRUE;
+				enterLiveMap(in_set_table, flownodes->head, new_in_set);
+			}
+
+			if(!equalSet(old_out_set, new_out_set)) {
+				has_change = TRUE;
+				enterLiveMap(out_set_table, flownodes->head, new_out_set);
+			}
+		}
+	}
+	// TAB_dump(in_set_table, show);
+	// printf("========================\n");
+	// TAB_dump(out_set_table, show);
+	// printf("========================\n");
+
+
+	// construct interference graph
+	// create nodes
+	TAB_table temp_node_table = TAB_empty();
+	for(Temp_tempList temps = F_registers(); temps; temps = temps->tail) {
+		getOrCreateNode(lg.graph, temps->head, temp_node_table);
+	}
+	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
+			if(defs->head != F_FP()) {
+				getOrCreateNode(lg.graph, defs->head, temp_node_table);
+			}
+		}
+	}
+	lg.adjSet = checked_malloc(G_nodeCount(lg.graph) * G_nodeCount(lg.graph) * sizeof(bool));
+
+	//create edges
+	for(Temp_tempList temps1 = F_registers(); temps1; temps1 = temps1->tail) {
+		for(Temp_tempList temps2 = F_registers(); temps2; temps2 = temps2->tail) {
+			if(temps1->head != temps2->head) {
+				connect(&lg, temps1->head, temps2->head, temp_node_table);
 			}
 		}
 	}
 
-	// construct interference graph
-	for(flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+		Temp_tempList liveouts = lookupLiveMap(out_set_table, flownodes->head);
 		if(FG_isMove(flownodes->head)) {
-			lg.move = Live_MoveList()
+			liveouts = differenceSet(liveouts, FG_use(flownodes->head));
+			for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
+				for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
+					lg.moves = Live_MoveList(getOrCreateNode(lg.graph, uses->head, temp_node_table),
+																		getOrCreateNode(lg.graph, defs->head, temp_node_table),
+																		lg.moves);
+        }
+      }
+		}
+
+		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
+			for(; liveouts; liveouts = liveouts->tail) {
+				connect(&lg, defs->head, liveouts->head, temp_node_table);
+			}
 		}
 	}
 

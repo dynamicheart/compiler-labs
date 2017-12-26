@@ -95,15 +95,14 @@ F_accessList F_AccessList(F_access head, F_accessList tail){
 static Temp_tempList registers = NULL;
 Temp_tempList F_registers(void)
 {
-	if(registers = NULL) {
+	// ebp and esp have special usages
+	if(registers == NULL) {
 		registers = Temp_TempList(F_EAX(),
 									Temp_TempList(F_ECX(),
 										Temp_TempList(F_EDX(),
 											Temp_TempList(F_EBX(),
 												Temp_TempList(F_ESI(),
-													Temp_TempList(F_EDI(),
-														Temp_TempList(F_ESP(),
-															Temp_TempList(F_EBP(), NULL))))))));
+													Temp_TempList(F_EDI(), NULL))))));
 	}
 	return registers;
 }
