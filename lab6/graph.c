@@ -19,13 +19,7 @@ struct G_graph_ {int nodecount;
 		 G_nodeList mynodes, mylast;
 	       };
 
-struct G_node_ {
-  G_graph mygraph;
-  int mykey;
-  G_nodeList succs;
-  G_nodeList preds;
-  void *info;
-};
+
 
 G_graph G_Graph(void)
 {G_graph g = (G_graph) checked_malloc(sizeof *g);
@@ -148,12 +142,6 @@ static G_nodeList cat(G_nodeList a, G_nodeList b) {
 G_nodeList G_adj(G_node n) {return cat(G_succ(n), G_pred(n));}
 
 void *G_nodeInfo(G_node n) {return n->info;}
-
-int G_nodeCount(G_graph g) {return g->nodecount;}
-
-int G_nodeKey(G_node n) {return n->mykey;}
-
-bool *G_isAdj(bool *adjSet, int nodecount, int nodekey1, int nodekey2) {return adjSet + (nodekey2 + nodekey1 * nodecount);}
 
 /* G_node table functions */
 

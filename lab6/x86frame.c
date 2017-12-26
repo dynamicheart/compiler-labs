@@ -245,7 +245,9 @@ T_exp F_externalCall(string s, T_expList args)
   return T_Call(T_Name(Temp_namedlabel(s)), args);
 }
 
-T_stm F_procEntryExit1(F_frame frame, T_stm stm)
+T_stm F_procEntryExit1(F_frame frame, T_exp body)
 {
-  return stm;
+	T_stm label = T_Label(frame->name);
+	T_stm stm = T_Move(T_Temp(F_RV()), body);
+  return T_Seq(label, stm);
 }

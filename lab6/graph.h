@@ -11,6 +11,14 @@ typedef struct G_node_ *G_node;    /* The "node" type */
 typedef struct G_nodeList_ *G_nodeList;
 struct G_nodeList_ { G_node head; G_nodeList tail;};
 
+struct G_node_ {
+  G_graph mygraph;
+  int mykey;
+  G_nodeList succs;
+  G_nodeList preds;
+  void *info;
+};
+
 /* Make a new graph */
 G_graph G_Graph(void);
 /* Make a new node in graph "g", with associated "info" */
@@ -53,12 +61,6 @@ G_nodeList G_adj(G_node n);
 
 /* Get the "info" associated with node "n" */
 void *G_nodeInfo(G_node n);
-
-int G_nodeCount(G_graph g);
-
-int G_nodeKey(G_node no);
-
-bool *G_isAdj(bool *set, int nodecount, int nodekey1, int nodekey2);
 
 /* The type of "tables" mapping graph-nodes to information */
 typedef struct TAB_table_  *G_table;

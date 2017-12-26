@@ -101,16 +101,12 @@ static G_node getOrCreateNode(G_graph g, Temp_temp temp, TAB_table temp_node_tab
 	return node;
 }
 
-static void connect(struct Live_graph *lg, Temp_temp temp1, Temp_temp temp2, TAB_table temp_node_table) {
+static void connect(G_graph ig, Temp_temp temp1, Temp_temp temp2, TAB_table temp_node_table) {
 	if(temp1 == temp2 || temp1 == F_FP() || temp2 == F_FP()) return;
 
-	G_node a = getOrCreateNode(lg->graph, temp1, temp_node_table);
-	G_node b = getOrCreateNode(lg->graph, temp2, temp_node_table);
+	G_node a = getOrCreateNode(ig, temp1, temp_node_table);
+	G_node b = getOrCreateNode(ig, temp2, temp_node_table);
 
-	bool *is_adj = G_isAdj(lg->adjSet, G_nodeCount(lg->graph), G_nodeKey(b), G_nodeKey(a));
-	*is_adj = TRUE;
-	is_adj = G_isAdj(lg->adjSet, G_nodeCount(lg->graph), G_nodeKey(a), G_nodeKey(b));
-	*is_adj = TRUE;
 	G_addEdge(a, b);
 	G_addEdge(b, a);
 }
@@ -129,7 +125,6 @@ Temp_temp Live_gtemp(G_node n) {
 }
 
 // void* show(G_node node, Temp_tempList sets){
-// 	printf("(%d): ", G_nodeKey(node));
 // 	for(;sets; sets = sets->tail) {
 // 		printf("t%d ", Temp_int(sets->head));
 // 	}
@@ -180,26 +175,10 @@ struct Live_graph Live_liveness(G_graph flow) {
 
 
 	// construct interference graph
-	// create nodes
 	TAB_table temp_node_table = TAB_empty();
-	for(Temp_tempList temps = F_registers(); temps; temps = temps->tail) {
-		getOrCreateNode(lg.graph, temps->head, temp_node_table);
-	}
-	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
-		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
-			if(defs->head != F_FP()) {
-				getOrCreateNode(lg.graph, defs->head, temp_node_table);
-			}
-		}
-	}
-	lg.adjSet = checked_malloc(G_nodeCount(lg.graph) * G_nodeCount(lg.graph) * sizeof(bool));
-
-	//create edges
 	for(Temp_tempList temps1 = F_registers(); temps1; temps1 = temps1->tail) {
 		for(Temp_tempList temps2 = F_registers(); temps2; temps2 = temps2->tail) {
-			if(temps1->head != temps2->head) {
-				connect(&lg, temps1->head, temps2->head, temp_node_table);
-			}
+			connect(lg.graph, temps1->head, temps2->head, temp_node_table);
 		}
 	}
 
@@ -209,16 +188,18 @@ struct Live_graph Live_liveness(G_graph flow) {
 			liveouts = differenceSet(liveouts, FG_use(flownodes->head));
 			for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
 				for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
-					lg.moves = Live_MoveList(getOrCreateNode(lg.graph, uses->head, temp_node_table),
-																		getOrCreateNode(lg.graph, defs->head, temp_node_table),
-																		lg.moves);
+					if(uses->head != F_FP() && defs->head != F_FP()) {
+						lg.moves = Live_MoveList(getOrCreateNode(lg.graph, uses->head, temp_node_table),
+																			getOrCreateNode(lg.graph, defs->head, temp_node_table),
+																			lg.moves);
+					}
         }
       }
 		}
 
 		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
 			for(; liveouts; liveouts = liveouts->tail) {
-				connect(&lg, defs->head, liveouts->head, temp_node_table);
+				connect(lg.graph, defs->head, liveouts->head, temp_node_table);
 			}
 		}
 	}

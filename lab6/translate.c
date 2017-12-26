@@ -469,7 +469,8 @@ Tr_exp Tr_noExp()
 
 void Tr_procEntryExit(Tr_level level, Tr_exp body, Tr_accessList formals)
 {
-  fragList = F_FragList(F_ProcFrag(unNx(body), level->frame), fragList);
+
+	fragList = F_FragList(F_ProcFrag(F_procEntryExit1(level->frame, unEx(body)), level->frame), fragList);
 }
 
 F_fragList Tr_getResult()

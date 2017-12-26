@@ -12,7 +12,6 @@ Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail);
 struct Live_graph {
 	G_graph graph;
 	Live_moveList moves;
-	bool *adjSet;
 };
 Temp_temp Live_gtemp(G_node n);
 

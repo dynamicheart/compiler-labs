@@ -56,6 +56,6 @@ F_frame F_newFrame(Temp_label name, U_boolList formals);
 T_exp F_externalCall(string s, T_expList args);
 F_frag F_string(Temp_label lab, string str);
 F_frag F_newProcFrag(T_stm body, F_frame frame);
-T_stm F_procEntryExit1(F_frame frame, T_stm stm);
+T_stm F_procEntryExit1(F_frame frame, T_exp exp);
 
 #endif
