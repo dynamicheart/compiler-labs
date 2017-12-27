@@ -500,7 +500,8 @@ Tr_exp transDec(S_table venv, S_table tenv, A_dec d, Tr_level level, Temp_label 
 
           Ty_tyList formalTys = makeFormalTyList(tenv, fundecs->head->params);
           U_boolList formals = makeFormalBoolList(fundecs->head->params);
-          Temp_label funLabel = Temp_newlabel();
+          //Temp_label funLabel = Temp_newlabel();
+          Temp_label funLabel = Temp_namedlabel(S_name(fundecs->head->name));
           Tr_level funLevel = Tr_newLevel(level, funLabel, formals);
           S_enter(venv, fundecs->head->name, E_FunEntry(funLevel, funLabel, formalTys, resultTy));
         }

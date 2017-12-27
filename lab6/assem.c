@@ -28,6 +28,18 @@ AS_instr AS_Oper(string a, Temp_tempList d, Temp_tempList s, AS_targets j) {
   p->u.OPER.dst=d;
   p->u.OPER.src=s;
   p->u.OPER.jumps=j;
+  p->u.OPER.uncond=FALSE;
+  return p;
+}
+
+AS_instr AS_Jump(string a, AS_targets j) {
+  AS_instr p = (AS_instr) checked_malloc (sizeof *p);
+  p->kind = I_OPER;
+  p->u.OPER.assem=a;
+  p->u.OPER.dst=NULL;
+  p->u.OPER.src=NULL;
+  p->u.OPER.jumps=j;
+  p->u.OPER.uncond=TRUE;
   return p;
 }
 
@@ -128,7 +140,7 @@ void AS_print(FILE *out, AS_instr i, Temp_map m)
     break;
   case I_LABEL:
     format(r, i->u.LABEL.assem, NULL, NULL, NULL, m);
-    fprintf(out, "%s\n", r); 
+    fprintf(out, "%s\n", r);
     /* i->u.LABEL->label); */
     break;
   case I_MOVE: {

@@ -11,14 +11,6 @@ typedef struct G_node_ *G_node;    /* The "node" type */
 typedef struct G_nodeList_ *G_nodeList;
 struct G_nodeList_ { G_node head; G_nodeList tail;};
 
-struct G_node_ {
-  G_graph mygraph;
-  int mykey;
-  G_nodeList succs;
-  G_nodeList preds;
-  void *info;
-};
-
 /* Make a new graph */
 G_graph G_Graph(void);
 /* Make a new node in graph "g", with associated "info" */
@@ -30,6 +22,8 @@ G_nodeList G_NodeList(G_node head, G_nodeList tail);
 /* Get the list of nodes belonging to "g" */
 G_nodeList G_nodes(G_graph g);
 
+G_nodeList G_union(G_nodeList nodes_a, G_nodeList nodes_b);
+G_nodeList G_difference(G_nodeList nodes_a, G_nodeList nodes_b);
 /* Tell if "a" is in the list "l" */
 bool G_inNodeList(G_node a, G_nodeList l);
 
@@ -53,6 +47,10 @@ G_nodeList G_pred(G_node n);
 /* Tell if there is an edge from "from" to "to" */
 bool G_goesTo(G_node from, G_node n);
 
+int G_inDegree(G_node n);
+
+int G_outDegree(G_node n);
+
 /* Tell how many edges lead to or from "n" */
 int G_degree(G_node n);
 
@@ -61,6 +59,10 @@ G_nodeList G_adj(G_node n);
 
 /* Get the "info" associated with node "n" */
 void *G_nodeInfo(G_node n);
+
+void G_addAdj(G_node u, G_node v);
+
+bool G_isAdj(G_node u, G_node v);
 
 /* The type of "tables" mapping graph-nodes to information */
 typedef struct TAB_table_  *G_table;

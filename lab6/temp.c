@@ -91,7 +91,7 @@ string Temp_look(Temp_map m, Temp_temp t) {
   else return NULL;
 }
 
-Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t) 
+Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t)
 {Temp_tempList p = (Temp_tempList) checked_malloc(sizeof (*p));
  p->head=h; p->tail=t;
  return p;
@@ -115,4 +115,79 @@ void Temp_dumpMap(FILE *out, Temp_map m) {
      fprintf(out,"---------\n");
      Temp_dumpMap(out,m->under);
   }
+}
+
+Temp_tempList Temp_union(Temp_tempList temps_a, Temp_tempList temps_b) {
+	Temp_tempList res = NULL;
+	for(Temp_tempList temps1 = temps_a; temps1; temps1 = temps1->tail) {
+		res = Temp_TempList(temps1->head, res);
+	}
+
+	for(Temp_tempList temps2 = temps_b; temps2; temps2 = temps2->tail) {
+		bool found = FALSE;
+		for(Temp_tempList temps1 = temps_a; temps1; temps1 = temps1->tail) {
+			if(temps1->head == temps2->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			res = Temp_TempList(temps2->head, res);
+		}
+	}
+	return res;
+}
+
+Temp_tempList Temp_difference(Temp_tempList temps_a, Temp_tempList temps_b) {
+	Temp_tempList res = NULL;
+	for(Temp_tempList temps1 = temps_a; temps1; temps1 = temps1->tail) {
+		bool found = FALSE;
+		for(Temp_tempList temps2 = temps_b; temps2; temps2 = temps2->tail) {
+			if(temps1->head == temps2->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			res = Temp_TempList(temps1->head, res);
+		}
+	}
+	return res;
+}
+
+bool Temp_equalTempList(Temp_tempList temps_a, Temp_tempList temps_b) {
+	for(Temp_tempList temps1 = temps_a; temps1; temps1 = temps1->tail) {
+		bool found = FALSE;
+		for(Temp_tempList temps2 = temps_b; temps2; temps2 = temps2->tail) {
+			if(temps1->head == temps2->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			return FALSE;
+		}
+	}
+	for(Temp_tempList temps2 = temps_b; temps2; temps2 = temps2->tail) {
+		bool found = FALSE;
+		for(Temp_tempList temps1 = temps_a; temps1; temps1 = temps1->tail) {
+			if(temps2->head == temps1->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+bool Temp_inTempList(Temp_temp temp, Temp_tempList temps) {
+	for(; temps; temps = temps->tail) {
+		if(temps->head == temp) {
+			return TRUE;
+		}
+	}
+	return FALSE;
 }

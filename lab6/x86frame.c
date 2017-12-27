@@ -98,9 +98,9 @@ Temp_tempList F_registers(void)
 	// ebp and esp have special usages
 	if(registers == NULL) {
 		registers = Temp_TempList(F_EAX(),
-									Temp_TempList(F_ECX(),
-										Temp_TempList(F_EDX(),
-											Temp_TempList(F_EBX(),
+									Temp_TempList(F_EBX(),
+										Temp_TempList(F_ECX(),
+											Temp_TempList(F_EDX(),
 												Temp_TempList(F_ESI(),
 													Temp_TempList(F_EDI(), NULL))))));
 	}
@@ -117,6 +117,11 @@ F_accessList F_formals(F_frame f)
   return f->formals;
 }
 
+int F_localCount(F_frame f)
+{
+	return f->local_count;
+}
+
 F_access F_allocLocal(F_frame f, bool escape)
 {
   if(escape){
@@ -125,6 +130,12 @@ F_access F_allocLocal(F_frame f, bool escape)
   }else{
     return InReg(Temp_newtemp());
   }
+}
+
+int F_allocSpill(F_frame f)
+{
+	f->local_count++;
+	return F_wordSize * (- f->local_count);
 }
 
 T_exp F_Exp(F_access acc, T_exp framePtr)
@@ -147,6 +158,15 @@ Temp_temp F_EAX(void)
 	return eax;
 }
 
+static Temp_temp ebx = NULL;
+Temp_temp F_EBX(void)
+{
+	if(ebx == NULL) {
+		ebx = Temp_newtemp();
+	}
+	return ebx;
+}
+
 static Temp_temp ecx = NULL;
 Temp_temp F_ECX(void)
 {
@@ -163,15 +183,6 @@ Temp_temp F_EDX(void)
 		edx = Temp_newtemp();
 	}
 	return edx;
-}
-
-static Temp_temp ebx = NULL;
-Temp_temp F_EBX(void)
-{
-	if(ebx == NULL) {
-		ebx = Temp_newtemp();
-	}
-	return ebx;
 }
 
 static Temp_temp esi = NULL;
@@ -231,6 +242,17 @@ Temp_tempList F_callersaves(void)
 	return callersaves;
 }
 
+static Temp_tempList calleesaves = NULL;
+Temp_tempList F_calleesaves(void)
+{
+	if(calleesaves == NULL) {
+		calleesaves = Temp_TempList(F_EBX(),
+										Temp_TempList(F_ESI(),
+											Temp_TempList(F_EDI(), NULL)));
+	}
+	return calleesaves;
+}
+
 F_frame F_newFrame(Temp_label name, U_boolList formals)
 {
   F_frame f = checked_malloc(sizeof(*f));
@@ -247,7 +269,5 @@ T_exp F_externalCall(string s, T_expList args)
 
 T_stm F_procEntryExit1(F_frame frame, T_exp body)
 {
-	T_stm label = T_Label(frame->name);
-	T_stm stm = T_Move(T_Temp(F_RV()), body);
-  return T_Seq(label, stm);
+	return T_Move(T_Temp(F_RV()), body);
 }

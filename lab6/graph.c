@@ -15,11 +15,19 @@
 #include "errormsg.h"
 #include "table.h"
 
-struct G_graph_ {int nodecount;
-		 G_nodeList mynodes, mylast;
-	       };
+struct G_graph_ {
+	int nodecount;
+	G_nodeList mynodes, mylast;
+};
 
-
+struct G_node_ {
+  G_graph mygraph;
+  int mykey;
+  G_nodeList succs;
+  G_nodeList preds;
+  G_nodeList adjs; // only for regalloc
+  void *info;
+};
 
 G_graph G_Graph(void)
 {G_graph g = (G_graph) checked_malloc(sizeof *g);
@@ -50,6 +58,7 @@ G_node G_Node(G_graph g, void *info)
 
  n->succs=NULL;
  n->preds=NULL;
+ n->adjs=NULL;
  n->info=info;
  return n;
 }
@@ -58,6 +67,46 @@ G_nodeList G_nodes(G_graph g)
 {
   assert(g);
   return g->mynodes;
+}
+
+G_nodeList G_union(G_nodeList nodes_a, G_nodeList nodes_b)
+{
+	G_nodeList res = NULL;
+	for(G_nodeList nodes1 = nodes_a; nodes1; nodes1 = nodes1->tail) {
+		res = G_NodeList(nodes1->head, res);
+	}
+
+	for(G_nodeList nodes2 = nodes_b; nodes2; nodes2 = nodes2->tail) {
+		bool found = FALSE;
+		for(G_nodeList nodes1 = nodes_a; nodes1; nodes1 = nodes1->tail) {
+			if(nodes1->head == nodes2->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			res = G_NodeList(nodes2->head, res);
+		}
+	}
+	return res;
+}
+
+G_nodeList G_difference(G_nodeList nodes_a, G_nodeList nodes_b)
+{
+	G_nodeList res = NULL;
+	for(G_nodeList nodes1 = nodes_a; nodes1; nodes1 = nodes1->tail) {
+		bool found = FALSE;
+		for(G_nodeList nodes2 = nodes_b; nodes2; nodes2 = nodes2->tail) {
+			if(nodes1->head == nodes2->head) {
+				found = TRUE;
+				break;
+			}
+		}
+		if(!found) {
+			res = G_NodeList(nodes1->head, res);
+		}
+	}
+	return res;
 }
 
 /* return true if a is in l list */
@@ -114,7 +163,7 @@ bool G_goesTo(G_node from, G_node n) {
 }
 
 /* return length of predecessor list for node n */
-static int inDegree(G_node n)
+int G_inDegree(G_node n)
 { int deg = 0;
   G_nodeList p;
   for(p=G_pred(n); p!=NULL; p=p->tail) deg++;
@@ -122,14 +171,14 @@ static int inDegree(G_node n)
 }
 
 /* return length of successor list for node n */
-static int outDegree(G_node n)
+int G_outDegree(G_node n)
 { int deg = 0;
   G_nodeList p;
   for(p=G_succ(n); p!=NULL; p=p->tail) deg++;
   return deg;
 }
 
-int G_degree(G_node n) {return inDegree(n)+outDegree(n);}
+int G_degree(G_node n) {return G_inDegree(n)+G_outDegree(n);}
 
 /* put list b at the back of list a and return the concatenated list */
 static G_nodeList cat(G_nodeList a, G_nodeList b) {
@@ -142,6 +191,20 @@ static G_nodeList cat(G_nodeList a, G_nodeList b) {
 G_nodeList G_adj(G_node n) {return cat(G_succ(n), G_pred(n));}
 
 void *G_nodeInfo(G_node n) {return n->info;}
+
+void G_addAdj(G_node u, G_node v) {
+	assert(u);  assert(v);
+  assert(u->mygraph == v->mygraph);
+  if (G_isAdj(u, v)) return;
+  u->adjs=G_NodeList(v, u->adjs);
+  v->adjs=G_NodeList(u, v->adjs);
+}
+
+bool G_isAdj(G_node u, G_node v) {
+	assert(u);  assert(v);
+	assert(u->mygraph == v->mygraph);
+	return G_inNodeList(u, v->adjs);
+}
 
 /* G_node table functions */
 

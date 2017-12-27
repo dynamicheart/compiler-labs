@@ -1,5 +1,5 @@
 /*
- * temp.h 
+ * temp.h
  *
  */
 
@@ -31,5 +31,10 @@ string Temp_look(Temp_map m, Temp_temp t);
 void Temp_dumpMap(FILE *out, Temp_map m);
 
 Temp_map Temp_name(void);
+
+Temp_tempList Temp_union(Temp_tempList temps_a, Temp_tempList temps_b);
+Temp_tempList Temp_difference(Temp_tempList temps_a, Temp_tempList temps_b);
+bool Temp_equalTempList(Temp_tempList temps_a, Temp_tempList temps_b);
+bool Temp_inTempList(Temp_temp temp, Temp_tempList temps);
 
 #endif

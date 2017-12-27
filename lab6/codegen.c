@@ -88,9 +88,9 @@ static void munchStm(T_stm s) {
       if(e->kind == T_NAME) {
         char *a = checked_malloc(BUFSIZE * sizeof(char));
         sprintf(a, "jmp %s", Temp_labelstring(e->u.NAME));
-        emit(AS_Oper(a, NULL, NULL, AS_Targets(s->u.JUMP.jumps)));
+        emit(AS_Jump(a, AS_Targets(s->u.JUMP.jumps)));
       }else {
-        emit(AS_Oper("jmp *`s0", NULL, L(munchExp(e), NULL), AS_Targets(s->u.JUMP.jumps)));
+        assert(0);
       }
       break;
     }
@@ -120,7 +120,7 @@ static void munchStm(T_stm s) {
         default:
           assert(0);
       }
-      emit(AS_Oper("cmp `s0,`s1", NULL, L(left, L(right, NULL)), NULL));
+      emit(AS_Oper("cmp `s0, `s1", NULL, L(right, L(left, NULL)), NULL));
       char *a = checked_malloc(BUFSIZE * sizeof(char));
       sprintf(a, "%s `j0",funcode);
       emit(AS_Oper(a, NULL, NULL, AS_Targets(Temp_LabelList(s->u.CJUMP.true, NULL))));
@@ -204,12 +204,7 @@ static Temp_temp munchExp(T_exp e) {
         emit(AS_Move("movl `s0, `d0", L(r, NULL), L(F_RV(), NULL)));
         return r;
       }else {
-        Temp_temp r = Temp_newtemp();
-        Temp_temp src = munchExp(e->u.CALL.fun);
-        munchArgs(e->u.CALL.args);
-        emit(AS_Oper("call *`s0", F_callersaves(), L(src, NULL), NULL));
-        emit(AS_Move("movl `s0, `d0", L(r, NULL), L(F_RV(), NULL)));
-        return r;
+        assert(0);
       }
     }
     case T_ESEQ: {
@@ -241,9 +236,25 @@ AS_instrList F_codegen(F_frame f, T_stmList stmList) {
   AS_instrList list;
   T_stmList sl;
 
+  Temp_temp saved_ebx = Temp_newtemp();
+  Temp_temp saved_esi = Temp_newtemp();
+  Temp_temp saved_edi = Temp_newtemp();
+
+  emit(AS_Move("movl `s0, `d0", L(saved_ebx, NULL), L(F_EBX(), NULL)));
+  emit(AS_Move("movl `s0, `d0", L(saved_esi, NULL), L(F_ESI(), NULL)));
+  emit(AS_Move("movl `s0, `d0", L(saved_edi, NULL), L(F_EDI(), NULL)));
+
   for(sl = stmList; sl; sl = sl->tail) {
     munchStm(sl->head);
   }
+
+  emit(AS_Move("movl `s0, `d0", L(F_EDI(), NULL), L(saved_edi, NULL)));
+  emit(AS_Move("movl `s0, `d0", L(F_ESI(), NULL), L(saved_esi, NULL)));
+  emit(AS_Move("movl `s0, `d0", L(F_EBX(), NULL), L(saved_ebx, NULL)));
+
+  emit(AS_Oper("leave", NULL, L(F_RV(), F_calleesaves()), NULL));
+  emit(AS_Oper("ret", NULL, L(F_RV(), F_calleesaves()), NULL));
+
   list = iList;
   iList = last = NULL;
   return list;

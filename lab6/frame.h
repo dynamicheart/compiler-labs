@@ -33,8 +33,10 @@ Temp_tempList F_registers(void);
 string F_getlabel(F_frame frame);
 T_exp F_Exp(F_access acc, T_exp framePtr);
 F_access F_allocLocal(F_frame f, bool escape);
+int F_allocSpill(F_frame f);
 F_accessList F_formals(F_frame f);
 Temp_label F_name(F_frame f);
+int F_localCount(F_frame f);
 extern const int F_wordSize;
 Temp_temp F_FP(void);
 Temp_temp F_SP(void);
@@ -52,6 +54,7 @@ Temp_temp F_ESP(void);
 Temp_temp F_EBP(void);
 
 Temp_tempList F_callersaves(void);
+Temp_tempList F_calleesaves(void);
 F_frame F_newFrame(Temp_label name, U_boolList formals);
 T_exp F_externalCall(string s, T_expList args);
 F_frag F_string(Temp_label lab, string str);

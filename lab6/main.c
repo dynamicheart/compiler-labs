@@ -18,9 +18,12 @@
 #include "canon.h"
 #include "prabsyn.h"
 #include "printtree.h"
-#include "escape.h" 
+#include "escape.h"
 #include "parse.h"
 #include "codegen.h"
+#include "graph.h"
+#include "flowgraph.h"
+#include "liveness.h"
 #include "regalloc.h"
 
 extern bool anyErrors;
@@ -30,55 +33,54 @@ extern bool anyErrors;
  * 2. initialize the register lists (for register allocation)
  * 3. do register allocation
  * 4. output (print) the assembly code of each function
- 
+
  * Uncommenting the following printf can help you debugging.*/
 
 /* print the assembly language instructions to filename.s */
 static void doProc(FILE *out, F_frame frame, T_stm body)
 {
  AS_proc proc;
- struct RA_result allocation;
  T_stmList stmList;
  AS_instrList iList;
  struct C_block blo;
 
  F_tempMap = Temp_empty();
 
- //printf("doProc for function %s:\n", S_name(F_name(frame)));
- /*printStmList(stdout, T_StmList(body, NULL));
- printf("-------====IR tree=====-----\n");*/
+ // printf("doProc for function %s:\n", S_name(F_name(frame)));
+ // printStmList(stdout, T_StmList(body, NULL));
+ // printf("-------====IR tree=====-----\n");
 
  stmList = C_linearize(body);
- /*printStmList(stdout, stmList);
- printf("-------====Linearlized=====-----\n");*/
+ // printStmList(stdout, stmList);
+ // printf("-------====Linearlized=====-----\n");
 
  blo = C_basicBlocks(stmList);
  C_stmListList stmLists = blo.stmLists;
- /*for (; stmLists; stmLists = stmLists->tail) {
- 	printStmList(stdout, stmLists->head);
-	printf("------====Basic block=====-------\n");
- }*/
+ for (; stmLists; stmLists = stmLists->tail) {
+ 	// printStmList(stdout, stmLists->head);
+	// printf("------====Basic block=====-------\n");
+ }
 
  stmList = C_traceSchedule(blo);
- /*printStmList(stdout, stmList);
- printf("-------====trace=====-----\n");*/
+ // printStmList(stdout, stmList);
+ // printf("-------====trace=====-----\n");
  iList  = F_codegen(frame, stmList); /* 9 */
+ //
+ // AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
+ // printf("----======before RA=======-----\n");
 
- AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
- printf("----======before RA=======-----\n");
+ // G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
+ // G_show(stdout, G_nodes(fg), NULL);
+ //
+ // printf("----======Flowgraph=======-----\n");
+ // struct Live_graph lg = Live_liveness(fg);
+ // G_show(stdout, G_nodes(lg.graph), NULL);
+ // printf("----======interference graph=======-----\n");
+ //
+ struct RA_result ra_result = RA_regAlloc(frame, iList);
 
- //G_graph fg = FG_AssemFlowGraph(iList);  /* 10.1 */
- struct RA_result ra = RA_regAlloc(frame, iList);  /* 11 */
-
- fprintf(out, "BEGIN function\n");
- AS_printInstrList (out, proc->body,
-                       Temp_layerMap(F_tempMap, ra.coloring));
- fprintf(out, "END function\n");
-
- //Part of TA's implementation. Just for reference.
- /*
- AS_rewrite(ra.il, Temp_layerMap(F_tempMap, ra.coloring));
- proc =	F_procEntryExit3(frame, ra.il);
+ // AS_printInstrList(stdout, ra_result.il, Temp_layerMap(ra_result.coloring, Temp_name()));
+ // printf("----===========after RA============-----\n");
 
  string procName = S_name(F_name(frame));
  fprintf(out, ".text\n");
@@ -86,15 +88,13 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  fprintf(out, ".type %s, @function\n", procName);
  fprintf(out, "%s:\n", procName);
 
- 
- //fprintf(stdout, "%s:\n", Temp_labelstring(F_name(frame)));
  //prologue
- fprintf(out, "%s", proc->prolog);
- AS_printInstrList (out, proc->body,
-                       Temp_layerMap(F_tempMap, ra.coloring));
- fprintf(out, "%s", proc->epilog);
- //fprintf(out, "END %s\n\n", Temp_labelstring(F_name(frame)));
- */
+ fprintf(out, "pushl %%ebp\n");
+ fprintf(out, "movl %%esp, %%ebp\n");
+ fprintf(out, "subl $%d, %%esp\n", F_localCount(frame));
+
+ AS_printInstrList (out, ra_result.il,
+                       Temp_layerMap(F_tempMap, ra_result.coloring));
 }
 
 void doStr(FILE *out, Temp_label label, string str) {
@@ -111,7 +111,7 @@ void doStr(FILE *out, Temp_label label, string str) {
 	}
 	fprintf(out, "\"\n");
 
-	//fprintf(out, ".string \"%s\"\n", str);
+	fprintf(out, ".string \"%s\"\n", str);
 }
 
 int main(int argc, string *argv)
@@ -126,7 +126,7 @@ int main(int argc, string *argv)
    absyn_root = parse(argv[1]);
    if (!absyn_root)
      return 1;
-     
+
 #if 0
    pr_exp(out, absyn_root, 0); /* print absyn data structure */
    fprintf(out, "\n");
@@ -146,9 +146,10 @@ int main(int argc, string *argv)
    for (;frags;frags=frags->tail)
      if (frags->head->kind == F_procFrag) {
        doProc(out, frags->head->u.proc.frame, frags->head->u.proc.body);
-	 }
-     else if (frags->head->kind == F_stringFrag) 
-	   doStr(out, frags->head->u.stringg.label, frags->head->u.stringg.str);
+     }
+     else if (frags->head->kind == F_stringFrag) {
+       doStr(out, frags->head->u.stringg.label, frags->head->u.stringg.str);
+     }
 
    fclose(out);
    return 0;

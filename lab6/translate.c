@@ -213,10 +213,11 @@ Tr_expList Tr_ExpList(Tr_exp head, Tr_expList tail)
 Tr_level Tr_outermost()
 {
   if(!outermost){
-		outermost = checked_malloc(sizeof(*outermost));
-	  outermost->frame = F_newFrame(Temp_newlabel(), NULL); // No need of static link for outermost level
-	  outermost->parent = NULL;
-	  outermost->formals = NULL;
+		// outermost = checked_malloc(sizeof(*outermost));
+	  // outermost->frame = F_newFrame(Temp_newlabel(), NULL); // No need of static link for outermost level
+	  // outermost->parent = NULL;
+	  // outermost->formals = NULL;
+		outermost = Tr_newLevel(NULL, Temp_namedlabel("tigermain"), NULL);
   }
   return outermost;
 }
