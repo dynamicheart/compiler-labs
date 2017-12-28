@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "util.h"
 #include "symbol.h"
 #include "types.h"
@@ -28,6 +29,11 @@
 
 extern bool anyErrors;
 
+static showRegs(Temp_temp temp)
+{
+  fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), temp));
+}
+
 /*Lab6: complete the function doProc
  * 1. initialize the F_tempMap
  * 2. initialize the register lists (for register allocation)
@@ -44,8 +50,6 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  AS_instrList iList;
  struct C_block blo;
 
- F_tempMap = Temp_empty();
-
  // printf("doProc for function %s:\n", S_name(F_name(frame)));
  // printStmList(stdout, T_StmList(body, NULL));
  // printf("-------====IR tree=====-----\n");
@@ -55,28 +59,28 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  // printf("-------====Linearlized=====-----\n");
 
  blo = C_basicBlocks(stmList);
- C_stmListList stmLists = blo.stmLists;
- for (; stmLists; stmLists = stmLists->tail) {
- 	// printStmList(stdout, stmLists->head);
-	// printf("------====Basic block=====-------\n");
- }
+ // C_stmListList stmLists = blo.stmLists;
+ // for (; stmLists; stmLists = stmLists->tail) {
+ // printStmList(stdout, stmLists->head);
+ // printf("------====Basic block=====-------\n");
+ // }
 
  stmList = C_traceSchedule(blo);
- // printStmList(stdout, stmList);
- // printf("-------====trace=====-----\n");
+ printStmList(stdout, stmList);
+ printf("-------====trace=====-----\n");
  iList  = F_codegen(frame, stmList); /* 9 */
- //
- // AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
- // printf("----======before RA=======-----\n");
 
- // G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
- // G_show(stdout, G_nodes(fg), NULL);
- //
- // printf("----======Flowgraph=======-----\n");
- // struct Live_graph lg = Live_liveness(fg);
- // G_show(stdout, G_nodes(lg.graph), NULL);
- // printf("----======interference graph=======-----\n");
- //
+ AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap(), Temp_name()));
+ printf("----======before RA=======-----\n");
+
+ G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
+ G_show(stdout, G_nodes(fg), NULL);
+
+ printf("----======Flowgraph=======-----\n");
+ struct Live_graph lg = Live_liveness(fg);
+ G_show(stdout, G_nodes(lg.graph), showRegs);
+ printf("----======interference graph=======-----\n");
+ 
  struct RA_result ra_result = RA_regAlloc(frame, iList);
 
  // AS_printInstrList(stdout, ra_result.il, Temp_layerMap(ra_result.coloring, Temp_name()));
@@ -91,27 +95,23 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  //prologue
  fprintf(out, "pushl %%ebp\n");
  fprintf(out, "movl %%esp, %%ebp\n");
- fprintf(out, "subl $%d, %%esp\n", F_localCount(frame));
+ fprintf(out, "subl $%d, %%esp\n", F_frameSize(frame));
 
- AS_printInstrList (out, ra_result.il,
-                       Temp_layerMap(F_tempMap, ra_result.coloring));
+ AS_printInstrList (out, ra_result.il, ra_result.coloring);
 }
 
 void doStr(FILE *out, Temp_label label, string str) {
 	fprintf(out, ".section .rodata\n");
-	fprintf(out, ".%s:\n", S_name(label));
-
-	int length = *(int *)str;
-	length = length + 4;
-	//it may contains zeros in the middle of string. To keep this work, we need to print all the charactors instead of using fprintf(str)
+	fprintf(out, "%s:\n", S_name(label));
+  fprintf(out, ".int %ld\n", strlen(str));
 	fprintf(out, ".string \"");
-	int i = 0;
-	for (; i < length; i++) {
-		fprintf(out, "%c", str[i]);
+	for (; *str; str++) {
+    if(*str == '\n') fprintf(out, "\\n");
+    else if(*str == '\t') fprintf(out, "\\t");
+    else fprintf(out, "%c", *str);
 	}
 	fprintf(out, "\"\n");
 
-	fprintf(out, ".string \"%s\"\n", str);
 }
 
 int main(int argc, string *argv)
@@ -134,7 +134,7 @@ int main(int argc, string *argv)
 
    //Lab 6: escape analysis
    //If you have implemented escape analysis, uncomment this
-   //Esc_findEscape(absyn_root); /* set varDec's escape field */
+   Esc_findEscape(absyn_root); /* set varDec's escape field */
 
    frags = SEM_transProg(absyn_root);
    if (anyErrors) return 1; /* don't continue */

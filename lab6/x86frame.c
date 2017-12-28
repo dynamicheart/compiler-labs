@@ -92,6 +92,23 @@ F_accessList F_AccessList(F_access head, F_accessList tail){
   return a;
 }
 
+static Temp_map tempmap = NULL;
+Temp_map F_tempMap(void)
+{
+	if(tempmap == NULL) {
+		tempmap = Temp_empty();
+		Temp_enter(tempmap, F_EAX(), "%eax");
+		Temp_enter(tempmap, F_EBX(), "%ebx");
+		Temp_enter(tempmap, F_ECX(), "%ecx");
+		Temp_enter(tempmap, F_EDX(), "%edx");
+		Temp_enter(tempmap, F_ESI(), "%esi");
+		Temp_enter(tempmap, F_EDI(), "%edi");
+		Temp_enter(tempmap, F_ESP(), "%esp");
+		Temp_enter(tempmap, F_EBP(), "%ebp");
+	}
+	return tempmap;
+}
+
 static Temp_tempList registers = NULL;
 Temp_tempList F_registers(void)
 {
@@ -117,9 +134,9 @@ F_accessList F_formals(F_frame f)
   return f->formals;
 }
 
-int F_localCount(F_frame f)
+int F_frameSize(F_frame f)
 {
-	return f->local_count;
+	return f->local_count * F_wordSize;
 }
 
 F_access F_allocLocal(F_frame f, bool escape)
@@ -235,7 +252,7 @@ static Temp_tempList callersaves = NULL;
 Temp_tempList F_callersaves(void)
 {
 	if(callersaves == NULL) {
-		callersaves = Temp_TempList(F_RV(),
+		callersaves = Temp_TempList(F_EAX(),
 										Temp_TempList(F_ECX(),
 											Temp_TempList(F_EDX(), NULL)));
 	}

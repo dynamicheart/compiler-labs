@@ -201,6 +201,17 @@ static Temp_temp munchExp(T_exp e) {
         char *a = checked_malloc(BUFSIZE * sizeof(char));
         sprintf(a, "call %s", Temp_labelstring(e->u.CALL.fun->u.NAME));
         emit(AS_Oper(a, F_callersaves(), NULL, NULL));
+
+        int offset = 0;
+        for(T_expList args = e->u.CALL.args; args; args = args->tail) {
+          offset += F_wordSize;
+        }
+        if(offset) {
+          a = checked_malloc(BUFSIZE * sizeof(char));
+          sprintf(a, "addl $%d, %%esp", offset);
+          emit(AS_Oper(a, NULL, NULL, NULL));
+        }
+
         emit(AS_Move("movl `s0, `d0", L(r, NULL), L(F_RV(), NULL)));
         return r;
       }else {

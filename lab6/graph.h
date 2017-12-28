@@ -11,6 +11,15 @@ typedef struct G_node_ *G_node;    /* The "node" type */
 typedef struct G_nodeList_ *G_nodeList;
 struct G_nodeList_ { G_node head; G_nodeList tail;};
 
+struct G_node_ {
+  G_graph mygraph;
+  int mykey;
+  G_nodeList succs;
+  G_nodeList preds;
+  G_nodeList adjs; // only for regalloc
+  void *info;
+};
+
 /* Make a new graph */
 G_graph G_Graph(void);
 /* Make a new node in graph "g", with associated "info" */

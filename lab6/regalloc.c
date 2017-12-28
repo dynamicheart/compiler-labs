@@ -77,11 +77,15 @@ static AS_instrList removeRedundantMoves(Temp_map coloring, AS_instrList il)
 				}else {
 					il = next_insts;
 				}
+			}else {
+				last_insts = cur_insts;
 			}
+
 			cur_insts = next_insts;
 		}else {
 			last_insts = cur_insts;
 			cur_insts = next_insts;
+
 		}
 	}
 	return il;
@@ -96,33 +100,52 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
 		AS_instrList last_insts = NULL;
 		AS_instrList cur_insts = il;
 		AS_instrList next_insts;
+		// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+		//  printf("===============================================\n");
 		while(cur_insts) {
 			next_insts = cur_insts->tail;
 
+			if(cur_insts->head->kind == I_LABEL) {
+				last_insts = cur_insts;
+				cur_insts = next_insts;
+				continue;
+			}
+
 			Temp_tempList *uses = getUses(cur_insts->head);
 			Temp_tempList *defs = getDefs(cur_insts->head);
+
+			Temp_temp t = NULL;
 			if(Temp_inTempList(spills->head, *uses)) {
-				Temp_temp t = Temp_newtemp();
+				if(t == NULL) {
+          t = Temp_newspill();
+        }
 				*uses = replaceTemp(*uses, spills->head, t);
 				char *a = checked_malloc(BUF_SIZE * sizeof(char));
-        sprintf(a, "movl %d(%%ebp), `d0\n", offset);
+        sprintf(a, "movl %d(%%ebp), `d0", offset);
 				AS_instrList new_insts = AS_InstrList(AS_Oper(a, Temp_TempList(t, NULL), NULL, NULL), cur_insts);
 				if(last_insts) {
 					last_insts->tail = new_insts;
 				}else {
 					il = new_insts;
 				}
+        //
+				// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+				//  printf("===============================================\n");
 			}
 
 			last_insts = cur_insts;
 
 			if(Temp_inTempList(spills->head, *defs)) {
-				Temp_temp t = Temp_newtemp();
+				if(t == NULL) {
+          t = Temp_newtemp();
+        }
 				*defs = replaceTemp(*defs, spills->head, t);
 				char *a = checked_malloc(BUF_SIZE * sizeof(char));
-        sprintf(a, "movl `s0, %d(%%ebp)\n", offset);
+        sprintf(a, "movl `s0, %d(%%ebp)", offset);
 				cur_insts->tail = AS_InstrList(AS_Oper(a, NULL, Temp_TempList(t, NULL), NULL), next_insts);
         last_insts = cur_insts->tail;
+				// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+				// printf("===============================================\n");
 			}
 
 			cur_insts = next_insts;
@@ -141,12 +164,16 @@ struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
 
 	struct COL_result col_result = COL_color(live_graph, initial, regs);
 	if(col_result.spills) {
+		AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+		printf("=================");
 		il = rewriteProgram(f, il, col_result.spills);
+		AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
 		return RA_regAlloc(f, il);
 	}
 
 	struct RA_result ret;
 	ret.il = removeRedundantMoves(col_result.coloring, il);
+	//ret.il = il;
 	ret.coloring = col_result.coloring;
 	return ret;
 }

@@ -14,7 +14,7 @@
 #include "table.h"
 
 #define K 6
-#define BUF_SIZE 40
+#define INFINITY 10000
 
 static char *color_names[7] = {"uncolored", "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"};
 
@@ -100,34 +100,40 @@ static void build(struct Live_graph lg, Temp_tempList regs)
 	priorities = lg.priorities;
 	nodemoves = G_empty();
 	for(G_nodeList nodes = G_nodes(graph); nodes; nodes = nodes->tail) {
-		int *d = checked_malloc(sizeof(int));
-		*d = G_outDegree(nodes->head);
-		G_enter(degree, nodes->head, d);
 
 		//color machine regs
+		int *d = checked_malloc(sizeof(int));
 		int *c = checked_malloc(sizeof(sizeof(int)));
 		Temp_temp temp = Live_gtemp(nodes->head);
 		if(temp == F_EAX()) {
+			*d = INFINITY;
 			*c = 1;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EBX()) {
+			*d = INFINITY;
 			*c = 2;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_ECX()) {
+			*d = INFINITY;
 			*c = 3;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EDX()) {
+			*d = INFINITY;
 			*c = 4;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_ESI()) {
+			*d = INFINITY;
 			*c = 5;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EDI()) {
+			*d = INFINITY;
 			*c = 6;
 			precolored = G_NodeList(nodes->head, precolored);
 		}else {
+			*d = G_outDegree(nodes->head);
 			*c = 0;
 		}
+		G_enter(degree, nodes->head, d);
 		G_enter(color, nodes->head, c);
 
 		G_enter(nodemoves, nodes->head, G_NodeList(nodes->head, NULL));
@@ -204,6 +210,7 @@ static void simplify()
 
 static void decrementDegree(G_node m)
 {
+	if(isPrecolored(m)) return;
 	int *d = G_look(degree, m);
 	int old_d = *d;
 	*d = *d - 1;
@@ -354,8 +361,19 @@ static void freezeMoves(G_node u)
 static void selectSpill()
 {
 	G_node m = spillWorklist->head;
-	//TODO
-	spillWorklist = spillWorklist->tail;
+	int max = *(int *)G_look(priorities, m);
+	for(G_nodeList nodes = spillWorklist->tail; nodes; nodes = nodes->tail) {
+		int t = *(int *)G_look(priorities, nodes->head);
+			 if (Temp_isspill(Live_gtemp(nodes->head))) {
+					 t = 0; /* spilled register has a lower priority to be spilled again */
+			 }
+			 if (t > max) {
+					 max = t;
+					 m = nodes->head;
+			 }
+	}
+
+	spillWorklist = G_difference(spillWorklist, G_NodeList(m, NULL));
 	simplifyWorklist = G_NodeList(m, simplifyWorklist);
 	freezeMoves(m);
 }

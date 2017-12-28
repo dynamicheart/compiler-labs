@@ -20,14 +20,6 @@ struct G_graph_ {
 	G_nodeList mynodes, mylast;
 };
 
-struct G_node_ {
-  G_graph mygraph;
-  int mykey;
-  G_nodeList succs;
-  G_nodeList preds;
-  G_nodeList adjs; // only for regalloc
-  void *info;
-};
 
 G_graph G_Graph(void)
 {G_graph g = (G_graph) checked_malloc(sizeof *g);

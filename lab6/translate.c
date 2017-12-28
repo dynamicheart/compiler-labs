@@ -286,10 +286,8 @@ Tr_exp Tr_stringExp(string stringg)
 
 Tr_exp Tr_callExp(Tr_level level, Tr_level funLevel, Temp_label label, Tr_expList args)
 {
-	if(funLevel == outermost){
-		args = Tr_ExpList(staticLink(outermost, level), args);
-	} else {
-		args = Tr_ExpList(staticLink(funLevel->parent, level), args);
+	if(funLevel != outermost){
+		args = Tr_ExpList(staticLink(funLevel, level), args);
 	}
   T_expList expList = NULL, rlist = NULL;
   for(; args; args = args->tail){

@@ -13,7 +13,7 @@
 #include "temp.h"
 #include "table.h"
 
-struct Temp_temp_ {int num;};
+struct Temp_temp_ {int num; bool spilled;};
 
 int Temp_int(Temp_temp t)
 {
@@ -42,6 +42,7 @@ static int temps = 100;
 Temp_temp Temp_newtemp(void)
 {Temp_temp p = (Temp_temp) checked_malloc(sizeof (*p));
  p->num=temps++;
+ p->spilled=FALSE;
  {char r[16];
   sprintf(r, "%d", p->num);
   Temp_enter(Temp_name(), p, String(r));
@@ -49,7 +50,21 @@ Temp_temp Temp_newtemp(void)
  return p;
 }
 
+Temp_temp Temp_newspill(void)
+{Temp_temp p = (Temp_temp) checked_malloc(sizeof (*p));
+ p->num=temps++;
+ p->spilled=TRUE;
+ {char r[16];
+  sprintf(r, "%d", p->num);
+  Temp_enter(Temp_name(), p, String(r));
+ }
+ return p;
+}
 
+bool Temp_isspill(Temp_temp temp)
+{
+ return temp->spilled;
+}
 
 struct Temp_map_ {TAB_table tab; Temp_map under;};
 

@@ -121,12 +121,13 @@ Temp_temp Live_gtemp(G_node n) {
 	return G_nodeInfo(n);
 }
 
-// void* show(G_node node, Temp_tempList sets){
-// 	for(;sets; sets = sets->tail) {
-// 		printf("t%d ", Temp_int(sets->head));
-// 	}
-// 	printf("\n");
-// }
+void *show(G_node node, Temp_tempList sets){
+	fprintf(stdout, "(%d):", node->mykey);
+	for(;sets; sets = sets->tail) {
+		fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), sets->head));
+	}
+	fprintf(stdout, "\n");
+}
 
 struct Live_graph Live_liveness(G_graph flow) {
 	//your code here.
@@ -167,9 +168,9 @@ struct Live_graph Live_liveness(G_graph flow) {
 		}
 	}
 	// TAB_dump(in_set_table, show);
-	// printf("========================\n");
+	// printf("-------============ inset table =============-------\n");
 	// TAB_dump(out_set_table, show);
-	// printf("========================\n");
+	// printf("-------============ outset table ============-------\n");
 
 
 	// construct interference graph
@@ -196,8 +197,8 @@ struct Live_graph Live_liveness(G_graph flow) {
 		}
 
 		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
-			for(; liveouts; liveouts = liveouts->tail) {
-				addEdge(lg.graph, defs->head, liveouts->head, temp_node_table, lg.priorities);
+			for(Temp_tempList outs = liveouts; outs; outs = outs->tail) {
+				addEdge(lg.graph, defs->head, outs->head, temp_node_table, lg.priorities);
 			}
 		}
 	}

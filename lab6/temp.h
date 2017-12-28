@@ -8,6 +8,8 @@
 
 typedef struct Temp_temp_ *Temp_temp;
 Temp_temp Temp_newtemp(void);
+Temp_temp Temp_newspill(void);
+bool Temp_isspill(Temp_temp);
 int Temp_int(Temp_temp);
 
 typedef struct Temp_tempList_ *Temp_tempList;
