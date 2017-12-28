@@ -144,7 +144,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
         sprintf(a, "movl `s0, %d(%%ebp)", offset);
 				cur_insts->tail = AS_InstrList(AS_Oper(a, NULL, Temp_TempList(t, NULL), NULL), next_insts);
         last_insts = cur_insts->tail;
-				// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+				// 	AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
 				// printf("===============================================\n");
 			}
 
@@ -165,9 +165,9 @@ struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
 	struct COL_result col_result = COL_color(live_graph, initial, regs);
 	if(col_result.spills) {
 		AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-		printf("=================");
+		printf("=================\n");
 		il = rewriteProgram(f, il, col_result.spills);
-		AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+		//AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
 		return RA_regAlloc(f, il);
 	}
 

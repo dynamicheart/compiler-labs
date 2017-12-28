@@ -14,7 +14,7 @@
 #include "table.h"
 
 #define K 6
-#define INFINITY 10000
+#define INFINITY 100000
 
 static char *color_names[7] = {"uncolored", "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"};
 
@@ -69,17 +69,13 @@ static Temp_map getColorMap();
 
 static bool isPrecolored(G_node n)
 {
-	for(G_nodeList nodes = precolored; nodes; nodes = nodes->tail) {
-		if(n == nodes->head) {
-			return TRUE;
-		}
-	}
-	return FALSE;
+	Temp_temp temp = Live_gtemp(n);
+	return Temp_inTempList(temp, F_registers());
 }
 
 static void build(struct Live_graph lg, Temp_tempList regs)
 {
-	precolored = NULL;
+	precolored = lg.precolored;
 	simplifyWorklist = NULL;
 	freezeWorklist = NULL;
 	spillWorklist = NULL;
@@ -108,27 +104,21 @@ static void build(struct Live_graph lg, Temp_tempList regs)
 		if(temp == F_EAX()) {
 			*d = INFINITY;
 			*c = 1;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EBX()) {
 			*d = INFINITY;
 			*c = 2;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_ECX()) {
 			*d = INFINITY;
 			*c = 3;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EDX()) {
 			*d = INFINITY;
 			*c = 4;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_ESI()) {
 			*d = INFINITY;
 			*c = 5;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else if(temp == F_EDI()) {
 			*d = INFINITY;
 			*c = 6;
-			precolored = G_NodeList(nodes->head, precolored);
 		}else {
 			*d = G_outDegree(nodes->head);
 			*c = 0;
@@ -165,9 +155,9 @@ static void makeWorklist()
 		int *d = G_look(degree, nodes->head);
 		int *c = G_look(color, nodes->head);
 		if(!isPrecolored(nodes->head)) {
-			if(*d >= K) spillWorklist = G_NodeList(nodes->head, spillWorklist);
-			else if(moveRelated(nodes->head)) freezeWorklist = G_NodeList(nodes->head, freezeWorklist);
-			else simplifyWorklist = G_NodeList(nodes->head, simplifyWorklist);
+			if(*d >= K) spillWorklist = G_union(spillWorklist, G_NodeList(nodes->head, NULL));
+			else if(moveRelated(nodes->head)) freezeWorklist = G_union(freezeWorklist, G_NodeList(nodes->head, NULL));
+			else simplifyWorklist = G_union(simplifyWorklist, G_NodeList(nodes->head, NULL));
 		}
 	}
 }
@@ -185,7 +175,7 @@ static Live_moveList nodeMoves(G_node n)
 	for(; moves; moves = moves->tail) {
 		for(G_nodeList nodes = nodemoves_n; nodes; nodes = nodes->tail) {
 			if(moves->src == nodes->head || moves->dst == nodes->head) {
-				res = Live_MoveList(moves->src, moves->dst, res);
+				res = Live_union(res, Live_MoveList(moves->src, moves->dst, NULL));
 			}
 		}
 	}
@@ -215,10 +205,10 @@ static void decrementDegree(G_node m)
 	int old_d = *d;
 	*d = *d - 1;
 	if(old_d == K) {
-		enableMoves(G_NodeList(m, adjacent(m)));
+		enableMoves(G_union(adjacent(m), G_NodeList(m, NULL)));
 		spillWorklist = G_difference(spillWorklist, G_NodeList(m, NULL));
-		if(moveRelated(m)) freezeWorklist = G_NodeList(m, freezeWorklist);
-		else simplifyWorklist = G_NodeList(m, simplifyWorklist);
+		if(moveRelated(m)) freezeWorklist = G_union(freezeWorklist, G_NodeList(m, NULL));
+		else simplifyWorklist = G_union(simplifyWorklist, G_NodeList(m, NULL));
 	}
 }
 
@@ -228,7 +218,7 @@ static void enableMoves(G_nodeList nodes)
 		for(Live_moveList moves = nodeMoves(nodes->head); moves; moves = moves->tail) {
 			if(Live_inMoveList(activeMoves, moves->src, moves->dst)) {
 				activeMoves = Live_difference(activeMoves, Live_MoveList(moves->src, moves->dst, NULL));
-				worklistMoves = Live_MoveList(moves->src, moves->dst, worklistMoves);
+				worklistMoves = Live_union(worklistMoves, Live_MoveList(moves->src, moves->dst, NULL));
 			}
 		}
 	}
@@ -248,18 +238,18 @@ static void coalesce()
 	worklistMoves = worklistMoves->tail;
 	bool adj = G_isAdj(u, y);
 	if(u == v) {
-		coalescedMoves = Live_MoveList(u, v, coalescedMoves);
+		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(u, v, NULL));
 		addWorkList(u);
 	}else if(isPrecolored(v) || adj) {
-		constrainedMoves = Live_MoveList(u, v, constrainedMoves);
+		constrainedMoves = Live_union(constrainedMoves, Live_MoveList(u, v, NULL));
 		addWorkList(u);
 		addWorkList(v);
 	}else if((isPrecolored(u) && OK(v, u)) || (!isPrecolored(u) && conservative(G_union(adjacent(u), adjacent(v))))) {
-		coalescedMoves = Live_MoveList(u, v, coalescedMoves);
+		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(u, v, NULL));
 		combine(u, v);
 		addWorkList(u);
 	}else {
-		activeMoves = Live_MoveList(u, v, activeMoves);
+		activeMoves = Live_union(activeMoves, Live_MoveList(u, v, NULL));
 	}
 }
 
@@ -268,7 +258,7 @@ static void addWorkList(G_node u)
 	int *d = G_look(degree, u);
 	if(!isPrecolored(u) && !(moveRelated(u) && *d < K)) {
 		freezeWorklist = G_difference(freezeWorklist, G_NodeList(u, NULL));
-		simplifyWorklist = G_NodeList(u, simplifyWorklist);
+		simplifyWorklist = G_union(simplifyWorklist, G_NodeList(u, NULL));
 	}
 }
 
@@ -294,7 +284,7 @@ static bool conservative(G_nodeList nodes)
 			k++;
 		}
 	}
-	return k < K;
+	return (k < K);
 }
 
 static G_node getAlias(G_node n)
@@ -313,11 +303,11 @@ static void combine(G_node u, G_node v)
 	if(G_inNodeList(v, freezeWorklist)) freezeWorklist = G_difference(freezeWorklist, G_NodeList(v, NULL));
 	else spillWorklist = G_difference(spillWorklist, G_NodeList(v, NULL));
 
-	coalescedNodes = G_NodeList(v, coalescedNodes);
+	coalescedNodes = G_union(coalescedNodes, G_NodeList(v, NULL));
 	G_enter(alias, v, u);
 
 	G_nodeList nodemoves_u = G_look(nodemoves, u);
-	nodemoves_u = G_NodeList(v, nodemoves_u );
+	nodemoves_u = G_union(nodemoves_u, G_NodeList(v, NULL));
 	G_enter(nodemoves, u, nodemoves_u);
 	for(G_nodeList nodes = adjacent(v); nodes; nodes = nodes->tail) {
 		addEdge(nodes->head, u);
@@ -335,7 +325,7 @@ static void freeze()
 {
 	G_node u = freezeWorklist->head;
 	freezeWorklist = freezeWorklist->tail;
-	simplifyWorklist = G_NodeList(u, simplifyWorklist);
+	simplifyWorklist = G_union(simplifyWorklist, G_NodeList(u, NULL));
 	freezeMoves(u);
 }
 
@@ -349,11 +339,11 @@ static void freezeMoves(G_node u)
 			v = getAlias(moves->dst);
 		}
 		activeMoves = Live_difference(activeMoves, Live_MoveList(moves->src, moves->dst, NULL));
-		frozenMoves = Live_MoveList(moves->src, moves->dst, frozenMoves);
+		frozenMoves = Live_union(frozenMoves, Live_MoveList(moves->src, moves->dst, NULL));
 		int *d = G_look(degree, v);
 		if(!nodeMoves(v) && *d < K) {
 			freezeWorklist = G_difference(freezeWorklist, G_NodeList(v, NULL));
-			simplifyWorklist = G_NodeList(v, simplifyWorklist);
+			simplifyWorklist = G_union(simplifyWorklist, G_NodeList(v, NULL));
 		}
 	}
 }
@@ -364,17 +354,19 @@ static void selectSpill()
 	int max = *(int *)G_look(priorities, m);
 	for(G_nodeList nodes = spillWorklist->tail; nodes; nodes = nodes->tail) {
 		int t = *(int *)G_look(priorities, nodes->head);
-			 if (Temp_isspill(Live_gtemp(nodes->head))) {
-					 t = 0; /* spilled register has a lower priority to be spilled again */
-			 }
-			 if (t > max) {
-					 max = t;
-					 m = nodes->head;
-			 }
+		if(Temp_isspill(Live_gtemp(nodes->head))) {
+			t = 0;
+		}
+		if(t > max) {
+			max = t;
+			m = nodes->head;
+		}
 	}
 
+	printf("%s\n", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), Live_gtemp(m)));
+
 	spillWorklist = G_difference(spillWorklist, G_NodeList(m, NULL));
-	simplifyWorklist = G_NodeList(m, simplifyWorklist);
+	simplifyWorklist = G_union(simplifyWorklist, G_NodeList(m, NULL));
 	freezeMoves(m);
 }
 
@@ -403,9 +395,9 @@ static void assignColors()
 			}
 		}
 		if(empty) {
-			spilledNodes = G_NodeList(n, spilledNodes);
+			spilledNodes = G_union(spilledNodes, G_NodeList(n, NULL));
 		}else {
-			coloredNodes = G_NodeList(n, coloredNodes);
+			coloredNodes = G_union(coloredNodes, G_NodeList(n, NULL));
 			int *c = G_look(color, n);
 			*c = actual_c;
 		}

@@ -38,6 +38,11 @@ static void addEdge(G_graph ig, Temp_temp temp1, Temp_temp temp2, TAB_table temp
 	G_node a = getOrCreateNode(ig, temp1, temp_node_table, priorities);
 	G_node b = getOrCreateNode(ig, temp2, temp_node_table, priorities);
 
+	int *priority = G_look(priorities, a);
+	*priority = *priority + 1;
+	priority = G_look(priorities, b);
+	*priority = *priority + 1;
+
 	if(!G_isAdj(a, b)){
 		G_addAdj(a, b);
 
@@ -129,6 +134,11 @@ void *show(G_node node, Temp_tempList sets){
 	fprintf(stdout, "\n");
 }
 
+static showRegs(Temp_temp temp)
+{
+  fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), temp));
+}
+
 struct Live_graph Live_liveness(G_graph flow) {
 	//your code here.
 	struct Live_graph lg;
@@ -179,6 +189,7 @@ struct Live_graph Live_liveness(G_graph flow) {
 		for(Temp_tempList temps2 = F_registers(); temps2; temps2 = temps2->tail) {
 			addEdge(lg.graph, temps1->head, temps2->head, temp_node_table, lg.priorities);
 		}
+		lg.precolored = G_NodeList(getOrCreateNode(lg.graph, temps1->head, temp_node_table, lg.priorities), lg.precolored);
 	}
 
 	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
@@ -188,9 +199,9 @@ struct Live_graph Live_liveness(G_graph flow) {
 			for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
 				for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
 					if(uses->head != F_FP() && defs->head != F_FP()) {
-						lg.moves = Live_MoveList(getOrCreateNode(lg.graph, uses->head, temp_node_table, lg.priorities),
+						lg.moves = Live_union(lg.moves, Live_MoveList(getOrCreateNode(lg.graph, uses->head, temp_node_table, lg.priorities),
 																			getOrCreateNode(lg.graph, defs->head, temp_node_table, lg.priorities),
-																			lg.moves);
+																			NULL));
 					}
         }
       }
@@ -204,25 +215,27 @@ struct Live_graph Live_liveness(G_graph flow) {
 	}
 
 	//calculate spill priority
-	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
-		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
-			if(!Temp_inTempList(defs->head, F_registers())) {
-				G_node node = TAB_look(temp_node_table, defs->head);
-				if(node){
-					increasePriority(lg.priorities, node);
-				}
-			}
-		}
+	// for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+	// 	for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
+	// 		if(!Temp_inTempList(defs->head, F_registers())) {
+	// 			G_node node = TAB_look(temp_node_table, defs->head);
+	// 			if(node){
+	// 				increasePriority(lg.priorities, node);
+	// 			}
+	// 		}
+	// 	}
+  //
+	// 	for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
+	// 		if(!Temp_inTempList(uses->head, F_registers())) {
+	// 			G_node node = TAB_look(temp_node_table, uses->head);
+	// 			if(node){
+	// 				increasePriority(lg.priorities, node);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-		for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
-			if(!Temp_inTempList(uses->head, F_registers())) {
-				G_node node = TAB_look(temp_node_table, uses->head);
-				if(node){
-					increasePriority(lg.priorities, node);
-				}
-			}
-		}
-	}
-
+	G_show(stdout, G_nodes(lg.graph), showRegs);
+	printf("----======interference graph=======-----\n");
 	return lg;
 }

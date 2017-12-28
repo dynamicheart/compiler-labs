@@ -29,11 +29,6 @@
 
 extern bool anyErrors;
 
-static showRegs(Temp_temp temp)
-{
-  fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), temp));
-}
-
 /*Lab6: complete the function doProc
  * 1. initialize the F_tempMap
  * 2. initialize the register lists (for register allocation)
@@ -73,14 +68,12 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap(), Temp_name()));
  printf("----======before RA=======-----\n");
 
- G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
- G_show(stdout, G_nodes(fg), NULL);
+ //G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
 
- printf("----======Flowgraph=======-----\n");
- struct Live_graph lg = Live_liveness(fg);
- G_show(stdout, G_nodes(lg.graph), showRegs);
- printf("----======interference graph=======-----\n");
- 
+ // struct Live_graph lg = Live_liveness(fg);
+ // G_show(stdout, G_nodes(lg.graph), showRegs);
+ // printf("----======interference graph=======-----\n");
+
  struct RA_result ra_result = RA_regAlloc(frame, iList);
 
  // AS_printInstrList(stdout, ra_result.il, Temp_layerMap(ra_result.coloring, Temp_name()));

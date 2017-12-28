@@ -17,6 +17,7 @@ struct Live_graph {
 	G_graph graph;
 	Live_moveList moves;
 	G_table priorities;
+	G_nodeList precolored;
 };
 Temp_temp Live_gtemp(G_node n);
 
