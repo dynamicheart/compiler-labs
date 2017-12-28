@@ -256,7 +256,7 @@ static void coalesce()
 static void addWorkList(G_node u)
 {
 	int *d = G_look(degree, u);
-	if(!isPrecolored(u) && !(moveRelated(u) && *d < K)) {
+	if(!isPrecolored(u) && !moveRelated(u) && *d < K) {
 		freezeWorklist = G_difference(freezeWorklist, G_NodeList(u, NULL));
 		simplifyWorklist = G_union(simplifyWorklist, G_NodeList(u, NULL));
 	}
@@ -268,7 +268,7 @@ static bool OK(G_node v, G_node r)
 	for(G_nodeList nodes = adjacent(v); nodes; nodes = nodes->tail) {
 		int *d = G_look(degree, nodes->head);
 		bool adj = G_isAdj(nodes->head, r);
-		if(!(*d <= K || isPrecolored(nodes->head) || adj)) {
+		if(!(*d < K || isPrecolored(nodes->head) || adj)) {
 			return FALSE;
 		}
 	}
