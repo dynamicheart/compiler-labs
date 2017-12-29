@@ -53,12 +53,12 @@ static void munchStm(T_stm s) {
             sprintf(a, "movl `s0, %d(`s1)", n);
             emit(AS_Oper(a, NULL, L(munchExp(e2), L(munchExp(e1), NULL)), NULL));
         }
-        else if(src->kind == T_MEM) {
-          /*MOVE(MEM(e1), MEM(e2)) */
-          T_exp e1 = dst->u.MEM, e2 = src->u.MEM;
-          //TODO
-          emit(AS_Oper("movl (`s0), `s1", NULL, L(munchExp(e1), L(munchExp(e2), NULL)), NULL));
-        }
+        // else if(src->kind == T_MEM) {
+        //   /*MOVE(MEM(e1), MEM(e2)) */
+        //   T_exp e1 = dst->u.MEM, e2 = src->u.MEM;
+        //   //TODO
+        //   emit(AS_Oper("movl (`s0), (`s1)", NULL, L(munchExp(e2), L(munchExp(e1), NULL)), NULL));
+        // }
         else {
           /* MOVE(MEM(e1), e2) */
           T_exp e1 = dst->u.MEM, e2 = src;
