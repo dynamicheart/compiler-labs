@@ -264,7 +264,6 @@ static void addWorkList(G_node u)
 
 static bool OK(G_node v, G_node r)
 {
-	//TODO nodes->head is r
 	for(G_nodeList nodes = adjacent(v); nodes; nodes = nodes->tail) {
 		int *d = G_look(degree, nodes->head);
 		bool adj = G_isAdj(nodes->head, r);

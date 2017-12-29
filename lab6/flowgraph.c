@@ -83,8 +83,6 @@ G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {
 			}
 		}
 	}
-	// G_show(stdout, G_nodes(g), NULL);
-  //
-	// printf("----======Flowgraph=======-----\n");
+
 	return g;
 }

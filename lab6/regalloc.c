@@ -100,8 +100,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
 		AS_instrList last_insts = NULL;
 		AS_instrList cur_insts = il;
 		AS_instrList next_insts;
-		// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-		//  printf("===============================================\n");
+
 		while(cur_insts) {
 			next_insts = cur_insts->tail;
 
@@ -128,9 +127,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
 				}else {
 					il = new_insts;
 				}
-        //
-				// AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-				//  printf("===============================================\n");
+
 			}
 
 			last_insts = cur_insts;
@@ -144,8 +141,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
         sprintf(a, "\nmovl `s0, %d(%%ebp)\n", offset);
 				cur_insts->tail = AS_InstrList(AS_Oper(a, NULL, Temp_TempList(t, NULL), NULL), next_insts);
         last_insts = cur_insts->tail;
-				// 	AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-				// printf("===============================================\n");
+
 			}
 
 			cur_insts = next_insts;
@@ -161,13 +157,10 @@ struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
 	struct Live_graph live_graph = Live_liveness(flow_graph);
 	Temp_map initial = Temp_layerMap(Temp_empty(), Temp_name());
 	Temp_tempList regs = F_registers();
-	AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-	printf("=================\n");
 
 	struct COL_result col_result = COL_color(live_graph, initial, regs);
 	if(col_result.spills) {
 		il = rewriteProgram(f, il, col_result.spills);
-		//AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
 		return RA_regAlloc(f, il);
 	}
 

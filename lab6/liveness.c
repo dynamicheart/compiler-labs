@@ -122,19 +122,6 @@ Temp_temp Live_gtemp(G_node n) {
 	return G_nodeInfo(n);
 }
 
-void *show(G_node node, Temp_tempList sets){
-	fprintf(stdout, "(%d):", node->mykey);
-	for(;sets; sets = sets->tail) {
-		fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), sets->head));
-	}
-	fprintf(stdout, "\n");
-}
-
-static showRegs(Temp_temp temp)
-{
-  fprintf(stdout, "%s ", Temp_look(Temp_layerMap(F_tempMap(), Temp_name()), temp));
-}
-
 struct Live_graph Live_liveness(G_graph flow) {
 	//your code here.
 	struct Live_graph lg;
@@ -174,11 +161,6 @@ struct Live_graph Live_liveness(G_graph flow) {
 			}
 		}
 	}
-	// TAB_dump(in_set_table, show);
-	// printf("-------============ inset table =============-------\n");
-	// TAB_dump(out_set_table, show);
-	// printf("-------============ outset table ============-------\n");
-
 
 	// construct interference graph
 	TAB_table temp_node_table = TAB_empty();
@@ -218,28 +200,5 @@ struct Live_graph Live_liveness(G_graph flow) {
 		}
 	}
 
-	//calculate spill priority
-	// for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
-	// 	for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
-	// 		if(!Temp_inTempList(defs->head, F_registers())) {
-	// 			G_node node = TAB_look(temp_node_table, defs->head);
-	// 			if(node){
-	// 				increasePriority(lg.priorities, node);
-	// 			}
-	// 		}
-	// 	}
-  //
-	// 	for(Temp_tempList uses = FG_use(flownodes->head); uses; uses = uses->tail) {
-	// 		if(!Temp_inTempList(uses->head, F_registers())) {
-	// 			G_node node = TAB_look(temp_node_table, uses->head);
-	// 			if(node){
-	// 				increasePriority(lg.priorities, node);
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	G_show(stdout, G_nodes(lg.graph), showRegs);
-	printf("----======interference graph=======-----\n");
 	return lg;
 }

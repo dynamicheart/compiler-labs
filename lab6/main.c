@@ -45,39 +45,16 @@ static void doProc(FILE *out, F_frame frame, T_stm body)
  AS_instrList iList;
  struct C_block blo;
 
- // printf("doProc for function %s:\n", S_name(F_name(frame)));
- // printStmList(stdout, T_StmList(body, NULL));
- // printf("-------====IR tree=====-----\n");
-
  stmList = C_linearize(body);
- // printStmList(stdout, stmList);
- // printf("-------====Linearlized=====-----\n");
 
  blo = C_basicBlocks(stmList);
- // C_stmListList stmLists = blo.stmLists;
- // for (; stmLists; stmLists = stmLists->tail) {
- // printStmList(stdout, stmLists->head);
- // printf("------====Basic block=====-------\n");
- // }
 
  stmList = C_traceSchedule(blo);
- printStmList(stdout, stmList);
- printf("-------====trace=====-----\n");
+
+
  iList  = F_codegen(frame, stmList); /* 9 */
 
- AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap(), Temp_name()));
- printf("----======before RA=======-----\n");
-
- //G_graph fg = FG_AssemFlowGraph(iList, frame);  /* 10.1 */
-
- // struct Live_graph lg = Live_liveness(fg);
- // G_show(stdout, G_nodes(lg.graph), showRegs);
- // printf("----======interference graph=======-----\n");
-
  struct RA_result ra_result = RA_regAlloc(frame, iList);
-
- // AS_printInstrList(stdout, ra_result.il, Temp_layerMap(ra_result.coloring, Temp_name()));
- // printf("----===========after RA============-----\n");
 
  string procName = S_name(F_name(frame));
  fprintf(out, ".text\n");
