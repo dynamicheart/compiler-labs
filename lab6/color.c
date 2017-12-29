@@ -14,7 +14,7 @@
 #include "table.h"
 
 #define K 6
-#define INFINITY 100000
+#define INFINITY 10000000
 
 static char *color_names[7] = {"uncolored", "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"};
 
@@ -227,29 +227,29 @@ static void enableMoves(G_nodeList nodes)
 static void coalesce()
 {
 	G_node u, v;
-	G_node x = getAlias(worklistMoves->src), y = getAlias(worklistMoves->dst);
+	G_node x = worklistMoves->src, y = worklistMoves->dst;
 	if(isPrecolored(y)) {
-		u = y;
-		v = x;
+		u = getAlias(y);
+		v = getAlias(x);
 	}else {
-		u = x;
-		v = y;
+		u = getAlias(x);
+		v = getAlias(y);
 	}
 	worklistMoves = worklistMoves->tail;
-	bool adj = G_isAdj(u, y);
+	bool adj = G_isAdj(u, v);
 	if(u == v) {
-		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(u, v, NULL));
+		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(x, y, NULL));
 		addWorkList(u);
 	}else if(isPrecolored(v) || adj) {
-		constrainedMoves = Live_union(constrainedMoves, Live_MoveList(u, v, NULL));
+		constrainedMoves = Live_union(constrainedMoves, Live_MoveList(x, y, NULL));
 		addWorkList(u);
 		addWorkList(v);
 	}else if((isPrecolored(u) && OK(v, u)) || (!isPrecolored(u) && conservative(G_union(adjacent(u), adjacent(v))))) {
-		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(u, v, NULL));
+		coalescedMoves = Live_union(coalescedMoves, Live_MoveList(x, y, NULL));
 		combine(u, v);
 		addWorkList(u);
 	}else {
-		activeMoves = Live_union(activeMoves, Live_MoveList(u, v, NULL));
+		activeMoves = Live_union(activeMoves, Live_MoveList(x, y, NULL));
 	}
 }
 
@@ -309,6 +309,7 @@ static void combine(G_node u, G_node v)
 	G_nodeList nodemoves_u = G_look(nodemoves, u);
 	nodemoves_u = G_union(nodemoves_u, G_NodeList(v, NULL));
 	G_enter(nodemoves, u, nodemoves_u);
+
 	for(G_nodeList nodes = adjacent(v); nodes; nodes = nodes->tail) {
 		addEdge(nodes->head, u);
 		decrementDegree(nodes->head);
@@ -377,7 +378,15 @@ static void assignColors()
 		selectStack = selectStack->tail;
 		bool okColors[K];
 		memset(okColors, TRUE, K);
-		for(G_nodeList nodes = G_succ(n); nodes; nodes = nodes->tail) {
+
+		G_nodeList adjList = G_succ(n);
+		for(G_nodeList nodes = G_nodes(graph); nodes; nodes = nodes->tail) {
+			if(getAlias(nodes->head) == n) {
+				adjList = G_union(G_succ(nodes->head), adjList);
+			}
+		}
+
+		for(G_nodeList nodes = adjList; nodes; nodes = nodes->tail) {
 			G_node a = getAlias(nodes->head);
 			if(G_inNodeList(a, G_union(coloredNodes, precolored))){
 				int *c = G_look(color, a);

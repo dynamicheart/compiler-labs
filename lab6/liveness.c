@@ -93,19 +93,15 @@ Live_moveList Live_difference(Live_moveList moves_a, Live_moveList moves_b)
 {
 	Live_moveList res = NULL;
 	for(Live_moveList moves1 = moves_a; moves1; moves1 = moves1->tail) {
-		res = Live_MoveList(moves1->src, moves1->dst, res);
-	}
-
-	for(Live_moveList moves2 = moves_b; moves2; moves2 = moves2->tail) {
 		bool found = FALSE;
-		for(Live_moveList moves1 = moves_a; moves1; moves1 = moves1->tail) {
+		for(Live_moveList moves2 = moves_b; moves2; moves2 = moves2->tail) {
 			if(moves1->src == moves2->src && moves1->dst == moves2->dst) {
 				found = TRUE;
 				break;
 			}
 		}
 		if(!found) {
-			res = Live_MoveList(moves2->src, moves2->dst, res);
+			res = Live_MoveList(moves1->src, moves1->dst, res);
 		}
 	}
 	return res;
@@ -145,6 +141,7 @@ struct Live_graph Live_liveness(G_graph flow) {
 	lg.graph = G_Graph();
 	lg.moves = NULL;
 	lg.priorities = G_empty();
+	lg.precolored = NULL;
 
 	// calculate the in/out set and begin liveness analysis
 	G_table in_set_table = G_empty();
@@ -190,6 +187,13 @@ struct Live_graph Live_liveness(G_graph flow) {
 			addEdge(lg.graph, temps1->head, temps2->head, temp_node_table, lg.priorities);
 		}
 		lg.precolored = G_NodeList(getOrCreateNode(lg.graph, temps1->head, temp_node_table, lg.priorities), lg.precolored);
+
+	}
+
+	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {
+		for(Temp_tempList defs = FG_def(flownodes->head); defs; defs = defs->tail) {
+			getOrCreateNode(lg.graph, defs->head, temp_node_table, lg.priorities);
+		}
 	}
 
 	for(G_nodeList flownodes = G_nodes(flow); flownodes; flownodes = flownodes->tail) {

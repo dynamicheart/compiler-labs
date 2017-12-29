@@ -121,7 +121,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
         }
 				*uses = replaceTemp(*uses, spills->head, t);
 				char *a = checked_malloc(BUF_SIZE * sizeof(char));
-        sprintf(a, "movl %d(%%ebp), `d0", offset);
+        sprintf(a, "\nmovl %d(%%ebp), `d0\n", offset);
 				AS_instrList new_insts = AS_InstrList(AS_Oper(a, Temp_TempList(t, NULL), NULL, NULL), cur_insts);
 				if(last_insts) {
 					last_insts->tail = new_insts;
@@ -141,7 +141,7 @@ static AS_instrList rewriteProgram(F_frame f, AS_instrList il, Temp_tempList spi
         }
 				*defs = replaceTemp(*defs, spills->head, t);
 				char *a = checked_malloc(BUF_SIZE * sizeof(char));
-        sprintf(a, "movl `s0, %d(%%ebp)", offset);
+        sprintf(a, "\nmovl `s0, %d(%%ebp)\n", offset);
 				cur_insts->tail = AS_InstrList(AS_Oper(a, NULL, Temp_TempList(t, NULL), NULL), next_insts);
         last_insts = cur_insts->tail;
 				// 	AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
@@ -161,11 +161,11 @@ struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
 	struct Live_graph live_graph = Live_liveness(flow_graph);
 	Temp_map initial = Temp_layerMap(Temp_empty(), Temp_name());
 	Temp_tempList regs = F_registers();
+	AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
+	printf("=================\n");
 
 	struct COL_result col_result = COL_color(live_graph, initial, regs);
 	if(col_result.spills) {
-		AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
-		printf("=================\n");
 		il = rewriteProgram(f, il, col_result.spills);
 		//AS_printInstrList(stdout, il, Temp_layerMap(F_tempMap(), Temp_name()));
 		return RA_regAlloc(f, il);
