@@ -1,4 +1,7 @@
 ._*
 *.o
-*.out
+a.out
+*.a
 *tar.gz
+.tags*
+
